@@ -25,7 +25,7 @@ def add_hyperlink(paragraph, url, text):
     rPr.append(c)
     
     u = OxmlElement('w:u')
-    u.set(qn('w:val'), 'single')  # Podkreślenie
+    u.set(qn('w:val'), 'single')  # Podkreślenie dolne
     rPr.append(u)
     
     new_run.append(rPr)
@@ -38,29 +38,29 @@ def add_hyperlink(paragraph, url, text):
     paragraph._p.append(hyperlink)
     return hyperlink
 
-# Zaawansowana funkcja formatująca tekst (obsługa pogrubień, linków i czerwonych alertów)
+# Zaawansowana funkcja formatująca tekst (obsługa linków i czerwonych alertów - bez ryzyka dziedziczenia bolda)
 def parsuj_i_formatuj_tekst(paragraph, tekst):
-    czesci_bold = tekst.split('**')
-    for index_bold, czesc_bold in enumerate(czesci_bold):
-        is_bold = (index_bold % 2 == 1)
+    # Dzielimy tekst według znacznika [BRAK INFORMACJI]
+    czesci_brak = tekst.split('[BRAK INFORMACJI]')
+    for index_brak, czesc_brak in enumerate(czesci_brak):
+        if czesc_brak:
+            # Automatyczne wykrywanie linków URL
+            segmenty_url = re.split(r'(https?://[^\s]+)', czesc_brak)
+            for idx_seg, seg in enumerate(segmenty_url):
+                if idx_seg % 2 == 1:
+                    # Wykryto URL -> prawdziwy klikalny link
+                    add_hyperlink(paragraph, seg, seg)
+                else:
+                    # Wykryto zwykły tekst -> wymuszamy normalną wagę (brak pogrubienia)
+                    if seg:
+                        run = paragraph.add_run(seg)
+                        run.bold = False
         
-        czesci_brak = czesc_bold.split('[BRAK INFORMACJI]')
-        for index_brak, czesc_brak in enumerate(czesci_brak):
-            if czesc_brak:
-                segmenty_url = re.split(r'(https?://[^\s]+)', czesc_brak)
-                for idx_seg, seg in enumerate(segmenty_url):
-                    if idx_seg % 2 == 1:
-                        add_hyperlink(paragraph, seg, seg)
-                    else:
-                        if seg:
-                            run = paragraph.add_run(seg)
-                            if is_bold:
-                                run.bold = True
-            
-            if index_brak < len(czesci_brak) - 1:
-                run_alert = paragraph.add_run('[BRAK INFORMACJI]')
-                run_alert.bold = True
-                run_alert.font.color.rgb = RGBColor(220, 38, 38)
+        # Kolorowanie alertu o braku danych na wyrazisty czerwony kolor
+        if index_brak < len(czesci_brak) - 1:
+            run_alert = paragraph.add_run('[BRAK INFORMACJI]')
+            run_alert.bold = True
+            run_alert.font.color.rgb = RGBColor(220, 38, 38)
 
 # Główna funkcja generująca plik .docx ze stałym nagłówkiem na każdej stronie
 def konwertuj_do_docx(tekst_markdown):
@@ -126,6 +126,9 @@ def konwertuj_do_docx(tekst_markdown):
         if not linia_strip:
             continue
             
+        # CZYSZCZENIE SYSTEMOWE: Usuwamy wszystkie gwiazdki, żeby wyeliminować błędy formatowania AI
+        linia_strip = linia_strip.replace('**', '')
+            
         # Nagłówki Sekcji (##) -> Kolor Ciemnopomarańczowy MeatPoint (#C2410C)
         if linia_strip.startswith('## '):
             p = doc.add_paragraph()
@@ -145,32 +148,29 @@ def konwertuj_do_docx(tekst_markdown):
             run.bold = True
             run.font.size = Pt(10.5)
             
-        # Listy punktowane -> WYMUSZENIE FORMATOWANIA DO DWUKROPKA
+        # Listy punktowane -> Twardy podział: Parametr przed dwukropkiem (BOLD), treść po (NORMAL)
         elif linia_strip.startswith('- ') or linia_strip.startswith('* '):
             czysty_tekst = linia_strip.lstrip('-* ').strip()
             p = doc.add_paragraph(style='List Bullet')
             p.paragraph_format.space_after = Pt(3)
             
-            # Jeśli w punkcie jest dwukropek, dzielimy na parametr (bold) i treść (normal)
             if ':' in czysty_tekst and not czysty_tekst.strip().startswith('http'):
                 przed_kolonem, za_kolonem = czysty_tekst.split(':', 1)
-                if len(przed_kolonem) < 45:  # Zabezpieczenie przed długimi zdaniami z dwukropkiem
-                    przed_kolonem = przed_kolonem.replace('**', '').strip()
-                    run_bold = p.add_run(przed_kolonem + ':')
+                if len(przed_kolonem) < 45:
+                    run_bold = p.add_run(przed_kolonem.strip() + ':')
                     run_bold.bold = True
                     parsuj_i_formatuj_tekst(p, za_kolonem)
                     continue
             
             parsuj_i_formatuj_tekst(p, czysty_tekst)
             
-        # Zwykły tekst akapitu -> WYMUSZENIE FORMATOWANIA DO DWUKROPKA (np. dla nagłówków parametrów)
+        # Zwykły tekst akapitu
         else:
             if ':' in linia_strip and not linia_strip.strip().startswith('http'):
                 przed_kolonem, za_kolonem = linia_strip.split(':', 1)
                 if len(przed_kolonem) < 45:
-                    przed_kolonem = przed_kolonem.replace('**', '').strip()
                     p = doc.add_paragraph()
-                    run_bold = p.add_run(przed_kolonem + ':')
+                    run_bold = p.add_run(przed_kolonem.strip() + ':')
                     run_bold.bold = True
                     parsuj_i_formatuj_tekst(p, za_kolonem)
                     continue
@@ -186,7 +186,7 @@ def konwertuj_do_docx(tekst_markdown):
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
 
 st.title("🐾 MeatPoint.io - Generator Protokołów Konsultacji")
-st.write("Wklej surową transkrypcję, aby wygenerować profesjonalny dokument Word z automatycznie klikalnymi linkami.")
+st.write("Wklej surową transkrypcję, aby wygenerować profesjonalny dokument Word z zachowaniem czystych stylów tekstu.")
 
 with st.sidebar:
     st.header("🔑 Autoryzacja")
@@ -215,7 +215,7 @@ with col2:
         if not api_key or not transcript:
             st.error("❌ Uzupełnij klucz API oraz transkrypcję przed uruchomieniem!")
         else:
-            with st.spinner("AI analizuje transkrypcję i formatuje strukturę..."):
+            with st.spinner("AI analizuje transkrypcję i oczyszcza szablony..."):
                 try:
                     genai.configure(api_key=api_key)
                     model = genai.GenerativeModel(model_name=model_choice, system_instruction=system_instruction)
@@ -267,7 +267,7 @@ with col2:
                     - **&alpha;-amylaza:** [Wartość + jednostka + trend]
                     - **Cholesterol:** [Wartość + jednostka + trend]
                     - **WBC (Leukocyty):** [Wartość + stan zapalny/infekcja]
-                    - **Gospodarka cukrowa (Fruktozamina):** [Wartość fruktozaminy, glukoza w moczu, wykluczenie/potwierdzenie cukrzycy]
+                    - **Gospodarka cukrowa (Fruktozamina):** [Wartość fruktozaminy, glukoza w moczu, wykluczenie/potwierzenie cukrzycy]
 
                     ## AKTUALNE LEKI I SUPLEMENTY MEDYCZNE
                     [Pełna lista przyjmowanych preparatów, dawkowanie, częstotliwość i od kiedy są stosowane]
@@ -306,7 +306,7 @@ with col2:
                     - **Smaczki funkcjonalne (do 5% kcal / maks 10 kcal dziennie):** Precyzyjne gramatury dobowe dla dopuszczonych bezpiecznych przysmaków (np. łopatka, polędwiczka, indyk). Link do kalkulatora: https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow
 
                     ## AWARYJNE KARMY KOMERCYJNE
-                    W stanach awaryjnych stosować karmy o niskiej zawartości węglowodanów i fosforu w suchej masie (s.m.) (np. Cat's Plate Venison sarna, Cat's Plate Lamb jagnięcina, Cat's Plate Gastro indyk).
+                    W stanach awaryjnych stosować karmy o najniższej zawartości węglowodanów i fosforu w suchej masie (s.m.) (np. Cat's Plate Venison sarna, Cat's Plate Lamb jagnięcina, Cat's Plate Gastro indyk).
                     Edukacja o tyndalizacji posiłków jako metodzie przechowywania: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic oraz film instruktażowy: https://youtu.be/tyfT3kmq3ME
 
                     ## HARMONOGRAM TRANZYCJI (WPROWADZANIE KROK PO KROKU)
