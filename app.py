@@ -15,7 +15,7 @@ from streamlit_mic_recorder import mic_recorder
 def segmentuj_docx(file_bytes):
     doc = Document(BytesIO(file_bytes))
     sekcje = {}
-    biezaca_sekcja = "Wstęp / Dane ogólne"
+    biezaca_sekcja = "Nagłówek i Data wizyty"
     sekcje[biezaca_sekcja] = []
     
     znane_naglowki = [
@@ -120,8 +120,7 @@ def konwertuj_do_docx(tekst_markdown):
     section.different_first_page_header_footer = True  
 
     # Nagłówek dla pierwszej strony
-    first_page_header = section.first_page_header
-    tabela_naglowka = first_page_header.add_table(1, 2, Inches(6.7))
+    tabela_naglowka = section.first_page_header.add_table(1, 2, Inches(6.7))
     tabela_naglowka.autofit = False
     
     tblPr = tabela_naglowka._tbl.tblPr
@@ -231,11 +230,10 @@ with st.sidebar:
     api_key = st.text_input("Klucz API Gemini", type="password")
     model_choice = st.selectbox("Wybierz model", ["gemini-2.5-flash", "gemini-1.5-flash"])
 
-# --- DEKLARACJA ZAKŁADEK (TABS) ---
 tab1, tab2 = st.tabs(["🚀 Generator Protokołów", "🎙️ Głosowy Edytor (Voice Editor)"])
 
 # ==============================================================================
-# 🚀 ZAKŁADKA 1: GENERATOR PROTOKOŁÓW (Twoja stabilna wersja)
+# 🚀 ZAKŁADKA 1: GENERATOR PROTOKOŁÓW
 # ==============================================================================
 with tab1:
     st.title("🐾 MeatPoint.io - Asystent Dietetyczny")
@@ -270,8 +268,6 @@ with tab1:
                         model = genai.GenerativeModel(model_name=model_choice, system_instruction=system_instruction)
                         
                         prompt = f"Przeanalizuj transkrypcję i uzupełnij dokładnie szablon. Zewnętrzna baza linków:\n{lista_linkow_prompt}\n\nTranskrypcja:\n{transcript}"
-                        # [Tutaj w rzeczywistej aplikacji znajduje się Twój pełny szablon tekstowy przesłany wcześniej]
-                        # Dla oszczędności miejsca wstrzykujemy pełną instrukcję szablonu w tle:
                         prompt += "\n\nUzupełnij sekcje: Data wizyty, DANE FORMALNE OPIEKUNA, DANE PACJENTA, WYWIAD KLINICZNY, WYPRÓŻNIENIA I OBJAWY GASTRYCZNE, AKTUALNE BADANIA LABORATORYJNE, AKTUALNE LEKI, KOMENTARZ, EDUKACJA OPIEKUNA, HISTORIA ŻYWIENIOWA, SPECYFIKACJA NOWEGO PLANU, GOSPODARKA WODNA, SUPLEMENTACJA DODATKOWA, WIĄZANIE FOSFORU, AWARYJNE KARMY, HARMONOGRAM TRANZYCJI, HARMONOGRAM BADAŃ, ZAŁOŻONE ZAŁĄCZNIKI."
                         
                         response = model.generate_content(prompt)
@@ -311,27 +307,29 @@ with tab2:
         col_ed1, col_ed2 = st.columns([1, 1])
         
         with col_ed1:
-            st.subheader("🛠️ Wybór obszaru do korekty")
+            st.markdown("### 1️⃣ Wybór obszaru do korekty")
             opcje_sekcji = list(st.session_state.sekcje_dokumentu.keys())
-            wybrana_sekcja = st.selectbox("Wybierz nagłówek, który chcesz zmodyfikować:", opcje_sekcji)
+            wybrana_sekcja = st.selectbox("Wybierz nagłówek, który chcesz zmodyfikować:", opcje_sekcji, key="wybor_sekcji_voice")
             
-            st.text_area("📄 Aktualna treść tej sekcji w pliku:", value=st.session_state.sekcje_dokumentu[wybrana_sekcja], height=250, disabled=True, key="text_obszar")
+            # NAPRAWA: Zastosowanie dynamicznego klucza key=f"text_obszar_{wybrana_sekcja}", aby odświeżać zawartość okna
+            st.text_area("📄 Aktualna treść tej sekcji w pliku:", value=st.session_state.sekcje_dokumentu[wybrana_sekcja], height=250, disabled=True, key=f"text_obszar_{wybrana_sekcja}")
             
         with col_ed2:
-            st.subheader("🎙️ Dyktowanie instrukcji dla AI")
-            st.info("Kliknij start, powiedz co chcesz zmienić (np. 'Zmień wagę kota na 3 kg i dopisz, że kał oddaje prawidłowo co dwa dni') i zatrzymaj nagrywanie.")
+            st.markdown("### 2️⃣ Dyktowanie instrukcji dla AI")
+            st.info("Kliknij start, wypowiedz instrukcję i zatrzymaj nagrywanie.")
             
-            # Wtyczka mikrofonu w przeglądarce
+            # NAPRAWA: Dynamiczny klucz nagrywarki pozwala na czysty reset mikrofonu po zmianie rubryki
             audio_instrukcja = mic_recorder(
                 start_prompt="🎙️ Rozpocznij nagrywanie głosu",
                 stop_prompt="🛑 Zatrzymaj i zapisz instrukcję",
-                key='audio_recorder_widget'
+                key=f"audio_recorder_{wybrana_sekcja}"
             )
             
             if audio_instrukcja:
                 st.audio(audio_instrukcja['bytes'], format="audio/wav")
+                st.warning("⚠️ UWAGA: Kliknij poniższy przycisk, aby AI najpierw zaktualizowało tekst sekcji po lewej stronie!")
                 
-                if st.button("🚀 Wprowadź poprawki głosowe do tekstu", type="primary"):
+                if st.button("🚀 Wprowadź poprawki głosowe do tekstu", type="primary", key=f"btn_apply_{wybrana_sekcja}"):
                     if not api_key:
                         st.error("❌ Musisz podać klucz API Gemini w panelu bocznym!")
                     else:
@@ -359,20 +357,21 @@ with tab2:
                                 
                                 response_edycja = model_edytor.generate_content([prompt_edycji, audio_part])
                                 
-                                # Zapisujemy poprawioną treść bezpośrednio do pamięci sesji
                                 st.session_state.sekcje_dokumentu[wybrana_sekcja] = response_edycja.text.strip()
                                 st.success("🎉 Sekcja zaktualizowana pomyślnie! Zmiany są widoczne po lewej stronie.")
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"🚨 Błąd edytora głosowego: {e}")
                                 
-        # Budowanie końcowego pliku docx na bazie zaktualizowanego słownika sekcji
+        # OSOBNY KROK KOŃCOWY
         st.markdown("---")
-        st.subheader("💾 Zapis gotowego dokumentu")
+        st.markdown("### 3️⃣ Zapis gotowego dokumentu")
+        st.info("Gdy poprawisz już głosowo wszystkie interesujące Cię sekcje, kliknij poniższy przycisk, aby skompilować finalny plik Word.")
+        
         if st.button("📦 Generuj finalny, zaktualizowany plik Word", type="primary", key="btn_build_final"):
             tekst_md_final = ""
             for sekcja, tresc in st.session_state.sekcje_dokumentu.items():
-                if sekcja == "Wstęp / Dane ogólne":
+                if sekcja == "Nagłówek i Data wizyty":
                     tekst_md_final += f"{tresc}\n\n"
                 else:
                     tekst_md_final += f"## {sekcja}\n{tresc}\n\n"
