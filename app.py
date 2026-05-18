@@ -20,14 +20,12 @@ def add_hyperlink(paragraph, url, text):
     new_run = OxmlElement('w:r')
     rPr = OxmlElement('w:rPr')
     
-    # Kolor linku - klasyczny elegancki niebieski nerkowy (#0563C1)
     c = OxmlElement('w:color')
-    c.set(qn('w:val'), '0563C1')
+    c.set(qn('w:val'), '0563C1')  # Elegancki niebieski kolor linku
     rPr.append(c)
     
-    # Podkreślenie dolne linku
     u = OxmlElement('w:u')
-    u.set(qn('w:val'), 'single')
+    u.set(qn('w:val'), 'single')  # Podkreślenie
     rPr.append(u)
     
     new_run.append(rPr)
@@ -42,29 +40,23 @@ def add_hyperlink(paragraph, url, text):
 
 # Zaawansowana funkcja formatująca tekst (obsługa pogrubień, linków i czerwonych alertów)
 def parsuj_i_formatuj_tekst(paragraph, tekst):
-    # Najpierw dzielimy tekst po znacznikach pogrubienia **
     czesci_bold = tekst.split('**')
     for index_bold, czesc_bold in enumerate(czesci_bold):
         is_bold = (index_bold % 2 == 1)
         
-        # Wewnątrz każdej części szukamy znacznika [BRAK INFORMACJI]
         czesci_brak = czesc_bold.split('[BRAK INFORMACJI]')
         for index_brak, czesc_brak in enumerate(czesci_brak):
             if czesc_brak:
-                # Automatyczne wykrywanie i separowanie linków URL w tekście
                 segmenty_url = re.split(r'(https?://[^\s]+)', czesc_brak)
                 for idx_seg, seg in enumerate(segmenty_url):
                     if idx_seg % 2 == 1:
-                        # Wykryto adres URL -> wstawiamy jako prawdziwy klikalny link
                         add_hyperlink(paragraph, seg, seg)
                     else:
-                        # Wykryto zwykły tekst
                         if seg:
                             run = paragraph.add_run(seg)
                             if is_bold:
                                 run.bold = True
             
-            # Kolorowanie alertu o braku danych na wyrazisty czerwony kolor
             if index_brak < len(czesci_brak) - 1:
                 run_alert = paragraph.add_run('[BRAK INFORMACJI]')
                 run_alert.bold = True
@@ -74,15 +66,13 @@ def parsuj_i_formatuj_tekst(paragraph, tekst):
 def konwertuj_do_docx(tekst_markdown):
     doc = Document()
     
-    # Ustawienia marginesów dokumentu (miejsce na automatyczny nagłówek marki)
     for section in doc.sections:
-        section.top_margin = Inches(1.3)     # Bezpieczny margines górny pod nagłówek
+        section.top_margin = Inches(1.3)
         section.bottom_margin = Inches(0.8)
         section.left_margin = Inches(0.8)
         section.right_margin = Inches(0.8)
         section.header_distance = Inches(0.4)
 
-    # Ustawienie globalnej czcionki Arial i interlinii 1.25 dla treści
     style = doc.styles['Normal']
     font = style.font
     font.name = 'Arial'
@@ -93,11 +83,9 @@ def konwertuj_do_docx(tekst_markdown):
     section = doc.sections[0]
     header = section.header
     
-    # Tabela w nagłówku strony (szerokość dopasowana do marginesów)
     tabela_naglowka = header.add_table(1, 2, Inches(6.7))
     tabela_naglowka.autofit = False
     
-    # Usunięcie obramowania tabeli nagłówkowej
     tblPr = tabela_naglowka._tbl.tblPr
     tblBorders = OxmlElement('w:tblBorders')
     for border_name in ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']:
@@ -111,7 +99,6 @@ def konwertuj_do_docx(tekst_markdown):
     kol_lewa.width = Inches(4.9)
     kol_prawa.width = Inches(1.8)
 
-    # Dane firmy po lewej stronie nagłówka
     p_kontakt = kol_lewa.paragraphs[0]
     p_kontakt.paragraph_format.space_after = Pt(0)
     run_name = p_kontakt.add_run("Anna Michalska\n")
@@ -126,7 +113,6 @@ def konwertuj_do_docx(tekst_markdown):
     run_det.font.size = Pt(8.5)
     run_det.font.color.rgb = RGBColor(100, 116, 139)
 
-    # Wstrzyknięcie Logo po prawej stronie nagłówka strony
     if os.path.exists("logo.png"):
         p_logo = kol_prawa.paragraphs[0]
         p_logo.alignment = WD_ALIGN_PARAGRAPH.RIGHT
@@ -159,15 +145,36 @@ def konwertuj_do_docx(tekst_markdown):
             run.bold = True
             run.font.size = Pt(10.5)
             
-        # Listy punktowane
+        # Listy punktowane -> WYMUSZENIE FORMATOWANIA DO DWUKROPKA
         elif linia_strip.startswith('- ') or linia_strip.startswith('* '):
             czysty_tekst = linia_strip.lstrip('-* ').strip()
             p = doc.add_paragraph(style='List Bullet')
             p.paragraph_format.space_after = Pt(3)
+            
+            # Jeśli w punkcie jest dwukropek, dzielimy na parametr (bold) i treść (normal)
+            if ':' in czysty_tekst and not czysty_tekst.strip().startswith('http'):
+                przed_kolonem, za_kolonem = czysty_tekst.split(':', 1)
+                if len(przed_kolonem) < 45:  # Zabezpieczenie przed długimi zdaniami z dwukropkiem
+                    przed_kolonem = przed_kolonem.replace('**', '').strip()
+                    run_bold = p.add_run(przed_kolonem + ':')
+                    run_bold.bold = True
+                    parsuj_i_formatuj_tekst(p, za_kolonem)
+                    continue
+            
             parsuj_i_formatuj_tekst(p, czysty_tekst)
             
-        # Zwykły tekst akapitu
+        # Zwykły tekst akapitu -> WYMUSZENIE FORMATOWANIA DO DWUKROPKA (np. dla nagłówków parametrów)
         else:
+            if ':' in linia_strip and not linia_strip.strip().startswith('http'):
+                przed_kolonem, za_kolonem = linia_strip.split(':', 1)
+                if len(przed_kolonem) < 45:
+                    przed_kolonem = przed_kolonem.replace('**', '').strip()
+                    p = doc.add_paragraph()
+                    run_bold = p.add_run(przed_kolonem + ':')
+                    run_bold.bold = True
+                    parsuj_i_formatuj_tekst(p, za_kolonem)
+                    continue
+                    
             p = doc.add_paragraph()
             parsuj_i_formatuj_tekst(p, linia_strip)
             
@@ -208,7 +215,7 @@ with col2:
         if not api_key or not transcript:
             st.error("❌ Uzupełnij klucz API oraz transkrypcję przed uruchomieniem!")
         else:
-            with st.spinner("AI analizuje transkrypcję i aktywuje hiperłącza..."):
+            with st.spinner("AI analizuje transkrypcję i formatuje strukturę..."):
                 try:
                     genai.configure(api_key=api_key)
                     model = genai.GenerativeModel(model_name=model_choice, system_instruction=system_instruction)
@@ -257,7 +264,7 @@ with col2:
                     - **T4 całkowita:** [Wartość + jednostka + trend]
                     - **Morfologia (HGB / Anemia):** [Wartość HGB, stan układu czerwonokrwinkowego, diagnoza niedokrwistości]
                     - **Albuminy:** [Wartość + jednostka + trend]
-                    - **α-amylaza:** [Wartość + jednostka + trend]
+                    - **&alpha;-amylaza:** [Wartość + jednostka + trend]
                     - **Cholesterol:** [Wartość + jednostka + trend]
                     - **WBC (Leukocyty):** [Wartość + stan zapalny/infekcja]
                     - **Gospodarka cukrowa (Fruktozamina):** [Wartość fruktozaminy, glukoza w moczu, wykluczenie/potwierdzenie cukrzycy]
@@ -288,10 +295,10 @@ with col2:
                     ## GOSPODARKA WODNA (PICIU)
                     - **Docelowa podaż płynów:** Wyliczona łączna dobowa objętość płynów in ml na masę ciała. Instrukcja szacowania spożycia wody metodą stałej dolewki referencyjnej (np. nalewanie 100 ml i mierzenie ubytku).
                     - **Zalecana woda:** Niskozmineralizowana (zwłaszcza z niskim wapń i sód) np. Żywiecki kryształ, Primavera źródlana, Mama i ja, przegotowana i odstana.
-                    - **Wody Niezalecane:** Nie używać komercyjnych „wód dla kotów” (nieznana mineralizacja, plastik) oraz wдов ze studni głębinowej (za wysoka mineralizacja).
+                    - **Wody Niezalecane:** Nie używać komercyjnych „wód dla kotów” (nieznana mineralizacja, plastik) oraz wód ze studni głębinowej (za wysoka mineralizacja).
 
                     ## SUPLEMENTACJA DODATKOWA (CELOWANA)
-                    [Precyzyjne dawkowanie, sugerowane preparaty komercyjne, wpływ na smakowitość i cel wdrożenia dla substanci wymienionych w rozmowie, m.in. Ubichinol, L-karnityna, Kwasy Omega 3, Cordyceps, Astaksantyna]
+                    [Precyzyjne dawkowanie, sugerowane preparaty komercyjne, wpływ na smakowitość i cel wdrożenia dla substancji wymienionych w rozmowie, m.in. Ubichinol, L-karnityna, Kwasy Omega 3, Cordyceps, Astaksantyna]
 
                     ## WIĄZANIE FOSFORU I GOSPODARKA ŻELAZEM
                     - **Wiązanie fosforu:** [Zalecenia dotyczące wyłapywaczy fosforu np. sewelamer, wymagane odstępy godzinowe od innych leków, status PorusOne]
@@ -299,7 +306,7 @@ with col2:
                     - **Smaczki funkcjonalne (do 5% kcal / maks 10 kcal dziennie):** Precyzyjne gramatury dobowe dla dopuszczonych bezpiecznych przysmaków (np. łopatka, polędwiczka, indyk). Link do kalkulatora: https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow
 
                     ## AWARYJNE KARMY KOMERCYJNE
-                    W stanach awaryjnych stosować karmy o najniższej zawartości węglowodanów i fosforu w suchej masie (s.m.) (np. Cat's Plate Venison sarna, Cat's Plate Lamb jagnięcina, Cat's Plate Gastro indyk).
+                    W stanach awaryjnych stosować karmy o niskiej zawartości węglowodanów i fosforu w suchej masie (s.m.) (np. Cat's Plate Venison sarna, Cat's Plate Lamb jagnięcina, Cat's Plate Gastro indyk).
                     Edukacja o tyndalizacji posiłków jako metodzie przechowywania: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic oraz film instruktażowy: https://youtu.be/tyfT3kmq3ME
 
                     ## HARMONOGRAM TRANZYCJI (WPROWADZANIE KROK PO KROKU)
