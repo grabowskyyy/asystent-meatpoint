@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 import os
 import re
+import pandas as pd
 from io import BytesIO
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
@@ -78,7 +79,7 @@ def konwertuj_do_docx(tekst_markdown):
 
     # --- LOGIKA ZRÓŻNICOWANIA NAGŁÓWKÓW ---
     section = doc.sections[0]
-    section.different_first_page_header_footer = True  # Podział: Strona 1 ma inny nagłówek niż reszta
+    section.different_first_page_header_footer = True  
 
     # 1. NAGŁÓWEK DLA PIERWSZEJ STRONY (Pełne dane firmy + Logo)
     first_page_header = section.first_page_header
@@ -118,7 +119,7 @@ def konwertuj_do_docx(tekst_markdown):
         p_logo.paragraph_format.space_after = Pt(0)
         p_logo.add_run().add_picture("logo.png", width=Inches(1.0))
 
-    # 2. NAGŁÓWEK DLA KOLEJNYCH STRON (Wyłącznie samo czyste Logo w rogu)
+    # 2. NAGŁÓWEK DLA KOLEJNYCH STRON (Wyłącznie samo czyste Logo)
     subsequent_header = section.header
     if os.path.exists("logo.png"):
         p_sub_logo = subsequent_header.paragraphs[0]
@@ -135,7 +136,6 @@ def konwertuj_do_docx(tekst_markdown):
             
         linia_strip = linia_strip.replace('**', '')
             
-        # Nagłówki główne (##)
         if linia_strip.startswith('## '):
             p = doc.add_paragraph()
             p.paragraph_format.space_before = Pt(14)
@@ -143,9 +143,8 @@ def konwertuj_do_docx(tekst_markdown):
             run = p.add_run(linia_strip.replace('## ', ''))
             run.bold = True
             run.font.size = Pt(12)
-            run.font.color.rgb = RGBColor(194, 65, 12)  # Pomarańczowy MeatPoint
+            run.font.color.rgb = RGBColor(194, 65, 12)
             
-        # Podnagłówki (###)
         elif linia_strip.startswith('### '):
             p = doc.add_paragraph()
             p.paragraph_format.space_before = Pt(8)
@@ -154,7 +153,6 @@ def konwertuj_do_docx(tekst_markdown):
             run.bold = True
             run.font.size = Pt(10.5)
             
-        # Punkty z listy (- / *) -> Podział do dwukropka
         elif linia_strip.startswith('- ') or linia_strip.startswith('* '):
             czysty_tekst = linia_strip.lstrip('-* ').strip()
             p = doc.add_paragraph(style='List Bullet')
@@ -170,7 +168,6 @@ def konwertuj_do_docx(tekst_markdown):
             
             parsuj_i_formatuj_tekst(p, czysty_tekst)
             
-        # Zwykłe linie tekstu
         else:
             if ':' in linia_strip and not linia_strip.strip().startswith('http'):
                 przed_kolonem, za_kolonem = linia_strip.split(':', 1)
@@ -217,17 +214,39 @@ with col1:
 with col2:
     st.subheader("📋 Wynikowy Protokół Wizyty")
     
+    # --- PROFILOWANY LINK DO TWOJEGO ARKUSZA GOOGLE ---
+    LINK_DO_ARKUSZA = "https://docs.google.com/spreadsheets/d/1qgSX_t4_fb36CqtFUluPDKDQILpR9_SLOlYBPTXSTes/edit?usp=sharing"
+    
     if st.button("🚀 Generuj i wypełnij szablon", type="primary"):
         if not api_key or not transcript:
             st.error("❌ Uzupełnij klucz API oraz transkrypcję przed uruchomieniem!")
         else:
-            with st.spinner("AI analizuje transkrypcję i formatuje strukturę stron..."):
+            with st.spinner("Pobieranie zewnętrznej bazy linków i analiza transkrypcji..."):
                 try:
+                    # Konwersja linku na strumień pobierania CSV
+                    csv_url = LINK_DO_ARKUSZA.replace('/edit?usp=sharing', '/export?format=csv')
+                    if '/edit' in LINK_DO_ARKUSZA and '?usp=sharing' not in LINK_DO_ARKUSZA:
+                        csv_url = LINK_DO_ARKUSZA.split('/edit')[0] + '/export?format=csv'
+                        
+                    # Pobranie bazy danych przy użyciu pandas
+                    df_linki = pd.read_csv(csv_url)
+                    
+                    # Parsowanie tabeli na czytelny dla AI tekst instruktażowy
+                    lista_linkow_prompt = ""
+                    for _, row in df_linki.iterrows():
+                        lista_linkow_prompt += f"- Link: {row['URL']} | Nazwa: {row['Nazwa']} | Kiedy użyć: {row['Opis dla AI']}\n"
+                    
                     genai.configure(api_key=api_key)
                     model = genai.GenerativeModel(model_name=model_choice, system_instruction=system_instruction)
                     
                     prompt = f"""
-                    Przeanalizuj poniższą transkrypcję i uzupełnij dokładnie ten szablon. Zachowaj wszystkie teksty edukacyjne i linki bez zmian. Jeśli brakuje danych, wstaw [BRAK INFORMACJI].
+                    Przeanalizuj poniższą transkrypcję i uzupełnij dokładnie ten szablon. Jeśli brakuje danych, wstaw [BRAK INFORMACJI].
+                    
+                    Oto Twoja dynamiczna zewnętrzna baza materiałów edukacyjnych MeatPoint:
+                    {lista_linkow_prompt}
+                    
+                    ZASADA DOPASOWANIA DYNAMICZNYCH LINKÓW:
+                    Przeanalizuj kontekst zdrowotny zwierzęcia z rozmowy. Jeśli pacjent wykazuje schorzenia pasujące do rubryki 'Kiedy użyć' z bazy materiałów, dopisz powiązany z nim czysty adres URL na końcu właściwego podpunktu edukacyjnego w szablonie (oddzielając go spacją). Jeśli warunek nie jest spełniony, pomiń wklejanie linku.
                     
                     ### SZABLON DO WYPEŁNIENIA:
                     Data wizyty: [Wpisz datę wizyty lub BRAK INFORMACJI]
@@ -283,7 +302,7 @@ with col2:
                     - **Główne założenia diety:** [Kluczowe cele makroskładnikowe: poziom fosforu, jakość i strawność białka, poziomy tłuszczów i węglowodanów pod kątem trzustki, zasada stopniowego wdrażania]
 
                     ## EDUKACJA OPIEKUNA: CO SIĘ ZMIENI NA DIECIE BARF/BACF
-                    - **Częstotliwość kału:** Zwierzę może oddawać mniejszy kał i może go oddawać co 2–3 dni. Na wysokomięsnej diecie to normalne. Ważne, żeby był dobrego kształtu i konsystencji (wdł skali bristolskiej). Dokładne informacje w tych filmach: https://www.facebook.com/reel/1860436634490613 oraz https://www.facebook.com/reel/1701233670818761
+                    - **Częstotliwość kału:** Zwierzę może oddawać mniejszy kał i może go oddawać co 2–3 dni. Na wysokomięsnej diecie to normalne. Ważne, żeby był dobrego kształtu i konsystencji (wdł skali bristolskiej).
                     - **UWAGA NA ZAPARCIA:** Należy odróżnić rzadkie oddawanie kału od zaparć. Jeśli pacjent na diecie BARF będzie miał: suchą kupę, twardą, bobki / rodzynki / kamyczki, z dużą ilością włosa… to może być zaparcie lub do niego prowadzić. Nie chodzi o samą częstotliwość oddawania stolca, ale o jego wygląd i o zachowanie w kuwecie.
                     - **Parametry krwi:** Parametry nerkowe krwi na wysoko mięsnej diecie mogą się różnić od zdrowych zwierząt (nie tylko z powodu choroby nerek), zwłaszcza mocznik i kreatynina. W zależności od pozostałych parametrów i samopoczucia - nie oznacza od razu pogorszenia choroby nerek. Ważna jest stała kontrola u nefrologa: badanie USG, SDMA, badania moczu i stanu ogólnego, być może FGF-23 - zgodnie z zaleceniami lekarza.
                     - **Objętość posiłku:** Początkowo może się wydawać, że diety jest mało. Dieta BARF/BACF nerkowa jest bardziej kaloryczna i treściwa w mniejszej objętości niż puszki i saszetki. Przyzwyczajanie się do tej zmniejszonej ilości może zająć ok. 2–3 miesiące i to jest normalne.
@@ -295,7 +314,7 @@ with col2:
 
                     ## SPECYFIKACJA NOWEGO PLANU DIETETYCEDNEGO
                     - **Model diety:** [Model diety np. BACF domowa gotowana przygotowywana na świeżo, logistyka, częstotliwość rotacji przepisów w miesiącach]
-                    - **Białka bazowe i dodatki:** [Wybrane gatunki mięs, podrobów oraz dozwolonych warzyw]
+                    - **Białka bazowe i additions:** [Wybrane gatunki mięs, podrobów oraz dozwolonych warzyw]
                     - **Kaloryczność próbna:** [Wartość] kcal/dzień (ustawiona w odniesieniu do dotychczasowej karmy). Warunki jednorazowej zmiany kaloryczności lub przeliczenia składnika w ramach wizyty.
 
                     ## GOSPODARKA WODNA (PICIU)
@@ -309,11 +328,10 @@ with col2:
                     ## WIĄZANIE FOSFORU I GOSPODARKA ŻELAZEM
                     - **Wiązanie fosforu:** [Zalecenia dotyczące wyłapywaczy fosforu np. sewelamer, wymagane odstępy godzinowe od innych leków, status PorusOne]
                     - **Gospodarka żelazem:** [Decyzje dotyczące niedokrwistości, diagnostyki laboratoryjnej ferrytyny/TIBC vs stosowanie form iniekcyjnych żelaza]
-                    - **Smaczki funkcjonalne (do 5% kcal / maks 10 kcal dziennie):** Precyzyjne gramatury dobowe dla dopuszczonych bezpiecznych przysmaków (np. łopatka, polędwiczka, indyk). Link do kalkulatora: https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow
+                    - **Smaczki funkcjonalne (do 5% kcal / maks 10 kcal dziennie):** Precyzyjne gramatury dobowe dla dopuszczonych bezpiecznych przysmaków (np. łopatka, polędwiczka, indyk).
 
                     ## AWARYJNE KARMY KOMERCYJNE
                     W stanach awaryjnych stosować karmy o najniższej zawartości węglowodanów i fosforu w suchej masie (s.m.) (np. Cat's Plate Venison sarna, Cat's Plate Lamb jagnięcina, Cat's Plate Gastro indyk).
-                    Edukacja o tyndalizacji posiłków jako metodzie przechowywania: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic oraz film instruktażowy: https://youtu.be/tyfT3kmq3ME
 
                     ## HARMONOGRAM TRANZYCJI (WPROWADZANIE KROK PO KROKU)
                     - **Tydzień 1:** Woda + Mięso + Podroby + Tłuszcz + Tauryna
@@ -345,11 +363,8 @@ with col2:
                     """
                     
                     response = model.generate_content(prompt)
-                    
                     st.text_area("Podgląd tekstu wygenerowanego przez AI:", value=response.text, height=350)
-                    
                     plik_docx = konwertuj_do_docx(response.text)
-                    
                     st.markdown("---")
                     st.download_button(
                         label="📥 POBIERZ PROFESJONALNY PLIK WORD (.DOCX)",
