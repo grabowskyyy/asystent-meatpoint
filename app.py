@@ -3,6 +3,7 @@ import google.generativeai as genai
 import os
 import re
 import pandas as pd
+import uuid
 from io import BytesIO
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
@@ -228,7 +229,6 @@ st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", p
 with st.sidebar:
     st.header("🔑 Autoryzacja i Model")
     api_key = st.text_input("Klucz API Gemini", type="password")
-    # ZAKTUALIZOWANE GENERACJE MODELI ZGOFNE Z PAY-AS-YOU-GO
     model_choice = st.selectbox("Wybierz model", ["gemini-3.5-flash", "gemini-3.1-pro"])
 
 tab1, tab2 = st.tabs(["🚀 Generator Protokołów", "🎙️ Głosowy Edytor (Voice Editor)"])
@@ -326,7 +326,7 @@ with tab1:
                         ## AKTUALNE LEKI I SUPLEMENTY MEDYCZNE
                         [Pełna lista przyjmowanych preparatów, dawkowanie, częstotliwość i od kiedy są stosowane]
 
-                        ## KOMENTAR DO WYWIADU I GŁÓWNE ZAŁOŻENIA DIETY
+                        ## KOMENTARZ DO WYWIADU I GŁÓWNE ZAŁOŻENIA DIETY
                         - **Komentarz:** [Podsumowanie stopnia trudności pacjenta, tolerancji składników i wymaganych kompromisów klinicznych między nerkami a przewodem pokarmowym]
                         - **Główne założenia diety:** [Kluczowe cele makroskładnikowe: poziom fosforu, jakość i strawność białka, poziomy tłuszczów i węglowodanów pod kątem trzustki, zasada stopniowego wdrażania]
 
@@ -413,11 +413,28 @@ with tab2:
     st.title("🎙️ Inteligentny Edytor Głosowy Protokółów")
     st.write("Wgraj wcześniej wygenerowany plik Word (.docx). Aplikacja rozbije go na sekcje, a Ty będziesz mógł dokonać poprawek za pomocą głosu.")
     
+    # Inicjalizacja klucza resetowania nagrań, jeśli nie istnieje
+    if 'voice_editor_reset_key' not in st.session_state:
+        st.session_state.voice_editor_reset_key = str(uuid.uuid4())
+        
     if 'sekcje_dokumentu' not in st.session_state:
         st.session_state.sekcje_dokumentu = None
 
-    uploaded_file = st.file_uploader("📂 Wgraj plik protokołu MeatPoint (.docx):", type=["docx"], key="uploader_voice")
+    # Kontener na uploader i przycisk resetu obok siebie
+    col_up1, col_up2 = st.columns([2, 1])
     
+    with col_up1:
+        uploaded_file = st.file_uploader("📂 Wgraj plik protokołu MeatPoint (.docx):", type=["docx"], key=f"uploader_voice_{st.session_state.voice_editor_reset_key}")
+    
+    with col_up2:
+        st.write("</br>", unsafe_allow_html=True) # Delikatne wyrównanie w pionie do poziomu uploadera
+        if st.button("🔄 Resetuj i wyczyść pamięć edytora", type="secondary", use_container_width=True, key="btn_reset_voice_state"):
+            st.session_state.sekcje_dokumentu = None
+            # Zmiana unikalnego klucza wymusi całkowite wyczyszczenie widgetów audio (mic_recorder) i uploadera
+            st.session_state.voice_editor_reset_key = str(uuid.uuid4())
+            st.success("🗑️ Pamięć podręczna edytora i nagrań została wyczyszczona!")
+            st.rerun()
+            
     if uploaded_file:
         if st.button("⚙️ Przeanalizuj i załaduj strukturę pliku", type="secondary"):
             st.session_state.sekcje_dokumentu = segmentuj_docx(uploaded_file.read())
@@ -438,10 +455,11 @@ with tab2:
             st.markdown("### 2️⃣ Dyktowanie instrukcji dla AI")
             st.info("Kliknij start, wypowiedz instrukcję i zatrzymaj nagrywanie.")
             
+            # Dodanie dynamicznego klucza resetującego dla mic_recorder zapobiega "pamiętaniu" starych nagrań
             audio_instrukcja = mic_recorder(
                 start_prompt="🎙️ Rozpocznij nagrywanie głosu",
                 stop_prompt="🛑 Zatrzymaj i zapisz instrukcję",
-                key=f"audio_recorder_{wybrana_sekcja}"
+                key=f"audio_recorder_{wybrana_sekcja}_{st.session_state.voice_editor_reset_key}"
             )
             
             if audio_instrukcja:
