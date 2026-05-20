@@ -96,7 +96,7 @@ def konwertuj_do_docx(tekst_md):
             continue
 
         if l_s.startswith('## '):
-            w_metryczce = False # Wykryto pierwszy nagłówek kliniczny - definitywny koniec metryczki
+            w_metryczce = False # Wykryto pierwszy nagłówek kliniczny - koniec bloku metryczki
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
             r = p.add_run(l_s.replace('## ', '')); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
         elif l_s.startswith('### '):
@@ -114,7 +114,7 @@ def konwertuj_do_docx(tekst_md):
                 if len(pk_s) < 45: 
                     p = doc.add_paragraph()
                     if w_metryczce:
-                        p.add_run(pk_s.strip() + ':\t').bold = True # Pionowy tabulator dla Kici
+                        p.add_run(pk_s.strip() + ':\t').bold = True # Pionowy tabulator dla metryczki pacjenta
                     else:
                         p.add_run(pk_s.strip() + ': ').bold = True
                     parsuj_i_formatuj_tekst(p, zk_s)
@@ -143,17 +143,23 @@ with tab1:
         if st.button("🚀 Generuj i wypełnij szablon", type="primary", key="btn_gen"):
             if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz transkrypcję!")
             else:
-                with st.spinner("Analiza kliniczna i dopasowywanie załączników..."):
+                with st.spinner("Analiza kliniczna i selekcja materiałów..."):
                     try:
                         csv_url = LINK_DO_ARKUSZA.replace('/edit?usp=sharing', '/export?format=csv')
                         df = pd.read_csv(csv_url); l_p = ""
-                        for _, r in df.iterrows(): l_p += f"- Materiał edukacyjny: {r['URL']} | Nazwa tematu: {r['Nazwa']} | Kiedy użyć (Zastosowanie): {r['Opis dla AI']}\n"
+                        for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Nazwa materiału: {r['Nazwa']} | Kiedy dołączyć (Zastosowanie): {r['Opis dla AI']}\n"
                         
                         genai.configure(api_key=api_key)
-                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś rygorystycznym, profesjonalnym asystentem medycznym dla MeatPoint.io. Dbasz o czystość struktury dokumentów i bezbłędne przypisywanie tylko dopasowanych tematycznie materiałów.")
+                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś profesjonalnym asystentem klinicznym dla dietetyk Anny Michalskiej (MeatPoint.io). Dbasz o idealny układ dokumentu i dopasowujesz linki edukacyjne tylko wtedy, gdy pacjent ma realne wskazania kliniczne.")
                         
-                        instrukcja_szablonu = "\n".join([f"## {naglowek}\n- Uzupełnij merytorycznie i precyzyjnie na podstawie transkrypcji." for naglowek in STRUKTURA_PROTOKOLU])
-                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nZbuduj dokument według ściśle określonej poniższej kolejności:\n\nKROK 1: Na samym początku wygeneruj linię daty: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz czyste linie metryczki pacjenta (BEZ znaków '##'):\nDane Opiekuna: imię i nazwisko\nPacjent: imię\nGatunek: gatunek\nRasa: rasa\nWiek: wiek\nWaga: waga\nBCS: kondycja\nIlość zwierząt w domu: liczba\nSterylizacja/kastracja: status\n\nKROK 3: Pod metryczką umieść poniższą strukturę medyczną:\n{instrukcja_szablonu}\n\n🚨 RESTRYKCYJNA SELEKCJA LINKÓW EDUKACYJNYCH:\nMasz do dyspozycji poniższą bazę linków zewnętrznych:\n{l_p}\n\nZAKAZ używania wszystkich linków na raz! Przeczytaj uważnie pole 'Kiedy użyć (Zastosowanie)'. Wpleć dany link w treść akapitu TYLKO I WYŁĄCZNIE wtedy, gdy bezpośrednio dotyczy problemu omawianego w danej sekcji u tego konkretnego pacjenta. Jeśli żaden link z bazy nie pasuje idealnie do kontekstu danej sekcji, nie dodawaj tam żadnego adresu URL.\n\nTranskrypcja:\n{transcript}"
+                        instrukcja_szablonu = ""
+                        for naglowek in STRUKTURA_PROTOKOLU:
+                            if naglowek == "ZAŁĄCZNIKI I STOPKA":
+                                instrukcja_szablonu += f"## {naglowek}\n- Umieść tutaj wyselekcjonowane linki z bazy, jeśli pasują do pacjenta.\n- Na samym końcu tej sekcji dodaj dokładnie te słowa:\nW razie jakichkolwiek pytań lub wątpliwości zapraszam do kontaktu mailowego.\n\nPozdrawiam serdecznie,\nAnna Michalska\n"
+                            else:
+                                instrukcja_szablonu += f"## {naglowek}\n- Uzupełnij precyzyjnie na podstawie transkrypcji.\n"
+
+                        p = f"Przeanalizuj podaną transkrypcję wizyty dietetycznej.\n\nZbuduj dokument według ściśle określonej kolejności struktury:\n\nKROK 1: Na samej górze stwórz wyśrodkowaną linię daty: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy, jeśli jej nie ma wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz czyste linie metryczki pacjenta (ZAKAZ używania znaków '##' na początku tych linii):\nDane Opiekuna: imię i nazwisko\nPacjent: imię\nGatunek: gatunek\nRasa: rasa\nWiek: wiek\nWaga: aktualna waga\nBCS: ocena kondycji\nIlość zwierząt w domu: liczba\nSterylizacja/kastracja: status\n\nKROK 3: Pod metryczką umieść poniższe nagłówki medyczne:\n{instrukcja_szablonu}\n\n🚨 RESTRYKCYJNE DOPASOWANIE MATERIAŁÓW EDUKACYJNYCH:\nOto dostępna baza linków zewnętrznych:\n{l_p}\n\nZAKAZ bezmyślnego wypisywania wszystkich linków. Przeanalizuj pole 'Kiedy dołączyć (Zastosowanie)'. Wpleć dany adres URL do dokumentu TYLKO wtedy, gdy bezpośrednio dotyczy jednostki chorobowej lub problemu, który został wyraźnie zdiagnozowany u tego konkretnego pacjenta w transkrypcji. Jeśli żaden link nie pasuje do stanu pacjenta, nie dodawaj żadnego adresu URL.\n\nTranskrypcja rozmowy:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu:", value=res.text, height=350, key="podglad_gen")
