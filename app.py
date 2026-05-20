@@ -1,4 +1,4 @@
-import streamlit as st, google.generativeai as genai, os, re, pandas as pd, uuid
+import streamlit as st, google.generativeai as genai, os, re, pandas as pd, uuid, time
 from io import BytesIO
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
@@ -45,10 +45,12 @@ TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
     "• Wody\n• Mięsa\n• Podrobów\n• tłuszczu\n• Tauryny\n"
     "Proszę przygotować dietę tylko z ich zawartością i na razie pominąć pozostałe suplementy.\n\n"
     "Jak Kicia będzie się dobrze czuła, na następny tydzień proszę przygotować dietę z zawartością:\n"
-    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Dodatkowo: \n\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n"
+    "• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Dodatkowo: \n\n"
-    "Jak wszystko będzie w porządku za kolejny tydzień proszen przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n"
+    "• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n"
     "• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
@@ -168,12 +170,9 @@ with st.sidebar:
 
 tab1, tab2 = st.tabs(["🚀 Automatyczny Transkrybent i Generator", "🎙️ Głosowy Edytor (Voice Editor)"])
 
-# ==============================================================================
-# 🚀 ZAKŁADKA 1: AUDIO/VIDEO HUB I GENERATOR PROTOKOŁÓW
-# ==============================================================================
 with tab1:
     st.title("🐾 Multimedialny Hub MeatPoint.io")
-    st.markdown("Wgraj plik wideo z Google Meet lub nagranie głosowe z konsultacji. Model automatycznie stworzy transkrypcję i wygeneruje finalny protokół.")
+    st.markdown("Wgraj plik wideo z Google Meet lub nagranie głosowe z konsultacji. Model asynchronicznie stworzy transkrypcję bez limitów wielkości i wygeneruje finalny protokół.")
     
     col1, col2 = st.columns([1, 1], gap="large")
     
@@ -181,33 +180,63 @@ with tab1:
         st.markdown("### 1️⃣ Wgranie pliku i Transkrypcja")
         media_file = st.file_uploader("📂 Wybierz plik audio lub wideo (.mp4, .mp3, .wav, .m4a):", type=["mp4", "mp3", "wav", "m4a"])
         
-        # Pamięć podręczna dla wygenerowanej transkrypcji
         if 'aktywna_transkrypcja' not in st.session_state: st.session_state.aktywna_transkrypcja = ""
         
         if st.button("🎙️ Uruchom inteligentną transkrypcję AI", type="secondary", use_container_width=True):
             if not api_key or not media_file: st.error("❌ Podaj klucz API oraz wgraj plik!")
             else:
-                with st.spinner("Skanowanie i odsłuchiwanie pliku przez Gemini (to może chwilę potrwać)..."):
-                    try:
-                        genai.configure(api_key=api_key)
-                        # Zapis surowych bajtów do pamięci i wysyłka do API
-                        f_bytes = media_file.read()
-                        m_type = media_file.type
-                        audio_data = {"data": f_bytes, "mime_type": m_type}
+                # NAPRAWA: Zastosowanie asynchronicznego mechanizmu File API dla dużych plików
+                status_placeholder = st.empty()
+                with status_placeholder.container():
+                    st.info("⏳ Krok 1/3: Przesyłanie dużego pliku do bezpiecznej chmury Google AI...")
+                
+                try:
+                    genai.configure(api_key=api_key)
+                    
+                    # Zapisujemy plik tymczasowo na dysku serwera, by przekazać go do File API
+                    temp_filename = f"temp_{uuid.uuid4()}_{media_file.name}"
+                    with open(temp_filename, "wb") as f:
+                        f.write(media_file.getbuffer())
+                    
+                    # Wgrywanie pliku do infrastruktury Google
+                    uploaded_file_ref = genai.upload_file(path=temp_filename)
+                    
+                    with status_placeholder.container():
+                        st.info("⏳ Krok 2/3: Trwa zaawansowane przetwarzanie i analiza audio przez Gemini...")
+                    
+                    # Pętla sprawdzająca stan pliku (czekamy aż status zmieni się na ACTIVE)
+                    while uploaded_file_ref.state.name == "PROCESSING":
+                        time.sleep(4)
+                        uploaded_file_ref = genai.get_file(uploaded_file_ref.name)
+                    
+                    if uploaded_file_ref.state.name == "FAILED":
+                        raise Exception("Plik nie mógł zostać przetworzony przez serwery Google.")
+
+                    with status_placeholder.container():
+                        st.info("⏳ Krok 3/3: Generowanie pełnego tekstu transkrypcji z podziałem na role...")
+
+                    model_transkrybent = genai.GenerativeModel(model_name="gemini-3.5-flash")
+                    prompt_tr = (
+                        "Przeanalizuj to nagranie audio/wideo z wizyty dietetycznej zwierzęcia. "
+                        "Stwórz bardzo dokładną transkrypcję ortograficzną SŁOWO W SŁOWO. "
+                        "Zastosuj wyraźny podział na role (Diarization), oznaczając kiedy mówi Ania (Dietetyk), "
+                        "a kiedy właściciel zwierzęcia (Opiekun). Nie pomijaj żadnych nazw leków, dawek ani wyników badań."
+                    )
+                    
+                    response_tr = model_transkrybent.generate_content([prompt_tr, uploaded_file_ref])
+                    st.session_state.aktywna_transkrypcja = response_tr.text
+                    
+                    # Sprzątanie - usunięcie pliku tymczasowego i pliku z chmury Google
+                    genai.delete_file(uploaded_file_ref.name)
+                    if os.path.exists(temp_filename):
+                        os.remove(temp_filename)
                         
-                        model_transkrybent = genai.GenerativeModel(model_name="gemini-3.5-flash")
-                        prompt_tr = (
-                            "Przeanalizuj to nagranie audio/wideo z wizyty dietetycznej zwierzęcia. "
-                            "Stwórz bardzo dokładną transkrypcję ortograficzną słowo w słowo. "
-                            "Zastosuj wyraźny podział na role (Diarization), oznaczając kiedy mówi Ania (Dietetyk), "
-                            "a kiedy właściciel zwierzęcia (Opiekun). Nie pomijaj żadnych nazw leków, dawek ani wyników badań."
-                        )
-                        response_tr = model_transkrybent.generate_content([prompt_tr, audio_data])
-                        st.session_state.aktywna_transkrypcja = response_tr.text
-                        st.success("✅ Transkrypcja wygenerowana pomyślnie!")
-                    except Exception as e: st.error(f"🚨 Błąd transkrypcji: {e}")
+                    status_placeholder.empty()
+                    st.success("✅ Pełna transkrypcja wygenerowana pomyślnie!")
+                except Exception as e:
+                    if os.path.exists(temp_filename): os.remove(temp_filename)
+                    st.error(f"🚨 Błąd asynchronicznej transkrypcji: {e}")
         
-        # Okno podglądu i ręcznej edycji transkrypcji (bez limitów znaków)
         transcript = st.text_area("📝 Podgląd / Edycja tekstu transkrypcji:", value=st.session_state.aktywna_transkrypcja, height=380, key="transkrypcja_obszar")
 
     with col2:
@@ -224,18 +253,41 @@ with tab1:
                         for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Tytuł: {r['Nazwa']} | Kiedy dołączyć (Wskazanie): {r['Opis dla AI']}\n"
                         
                         genai.configure(api_key=api_key)
-                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. Zachowujesz rygorystyczną spójność i strukturę bez samowolnej zmiany nazw nagłówków.")
+                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. Pisz wyłącznie prawdę na podstawie dostarczonego pliku tekstowego. Jeśli brakuje danych, bezwzględnie wstaw fragment [BRAK INFORMACJI]. Zakaz zmyślania preparatów celowanych.")
                         
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyselekcjonowane adresy URL z bazy, jeśli ich warunek kliniczny został spełniony.\n- Pod nimi dodaj dokładnie te zdania końcowe:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_INNE_SMACZKI_STALY}\n\n"
                             elif naglowek == "Wprowadzanie suplementów:":
-                                instrukcja_szablonu += f"## {naglowek}\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
+                                instrukcja_szablonu += (
+                                    f"## {naglowek}\n"
+                                    "Proszę zacząć od:\n• Wody\n• Mięsa\n• Podrobów\n• tłuszczu\n• Tauryny\n"
+                                    "Proszę przygotować dietę tylko z ich zawartością i na razie pominąć pozostałe suplementy.\n\n"
+                                    "Jak Kicia będzie się dobrze czuła, na następny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
+                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
+                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
+                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
+                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
+                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
+                                    "To będzie już kompletna dieta."
+                                )
                             else:
                                 prefix = "" if naglowek.startswith("###") else "## "
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Uzupełnij precyzyjnymi faktami medycznymi z transkrypcji.\n"
