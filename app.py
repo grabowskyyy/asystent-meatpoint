@@ -20,7 +20,7 @@ STRUKTURA_PROTOKOLU = [
     "Badania kontrolne:", "Załączniki:"
 ]
 
-# Stały tekst edukacyjny dotyczący tyndalizacji z poprawnymi linkami
+# Stałe bloki edukacyjne dla automatyzacji procesów na blogu i YouTube
 TEKST_TYNDALIZACJA_STALY = (
     "Jeżeli robią Państwo dietę na dłużej niż 5-6 dni (mowa o diecie surowej) i chcą Państwo "
     "ją bezpiecznie przechowywać w słoiczkach w lodówce (bez zamrażania) LUB przygotowują Państwo "
@@ -33,7 +33,6 @@ TEKST_TYNDALIZACJA_STALY = (
     "gdzie pokazujemy cały proces krok po kroku: https://www.youtube.com/watch?v=tyfT3kmq3ME"
 )
 
-# Nowy stały tekst edukacyjny dotyczący obliczania kaloryczności innych smaczków komercyjnych
 TEKST_INNE_SMACZKI_STALY = (
     "Wprowadzając do codziennej rutyny jakiekolwiek inne smaczki komercyjne, należy bezwzględnie "
     "pamiętać o kontrolowaniu ich kaloryczności, aby nie zaburzyć bilansu nowej diety pacjenta.\n\n"
@@ -99,14 +98,15 @@ def konwertuj_do_docx(tekst_md):
         sec.header.paragraphs[0].paragraph_format.space_after = Pt(0)
         sec.header.paragraphs[0].add_run().add_picture("logo.png", width=Inches(1.0))
 
+    w_metryczce = True
+
     for line in tekst_md.split('\n'):
         l_s = line.strip()
         if not l_s: continue
         l_s = l_s.replace('**', '')
         
         if "DATA WIZYTY:" in l_s.upper():
-            p = doc.add_paragraph()
-            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(6)
             poczatek_daty, *koniec_daty = l_s.split(':', 1)
             p.add_run(poczatek_daty + ': ').bold = True
@@ -119,8 +119,8 @@ def konwertuj_do_docx(tekst_md):
         elif l_s.startswith('### '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(8), Pt(2)
             r = p.add_run(l_s.replace('### ', '')); r.bold, r.font.size = True, Pt(10.5)
-        elif l_s.startswith('- ') or l_s.startswith('* '):
-            c_t = l_s.lstrip('-* ').strip(); p = doc.add_paragraph(style='List Bullet'); p.paragraph_format.space_after = Pt(3)
+        elif l_s.startswith('- ') or l_s.startswith('* ') or l_s.startswith('• '):
+            c_t = l_s.lstrip('-*• ').strip(); p = doc.add_paragraph(style='List Bullet'); p.paragraph_format.space_after = Pt(3)
             if ':' in c_t and not c_t.strip().startswith('http'):
                 pk_s, zk_s = c_t.split(':', 1)
                 if len(pk_s) < 45: p.add_run(pk_s.strip() + ': ').bold = True; parsuj_i_formatuj_tekst(p, zk_s); continue
@@ -130,7 +130,7 @@ def konwertuj_do_docx(tekst_md):
                 pk_s, zk_s = l_s.split(':', 1)
                 if len(pk_s) < 45: 
                     p = doc.add_paragraph()
-                    p.add_run(pk_s.strip() + ': ').bold = True # Zunifikowany podział z pojedynczą spacją po dwukropku
+                    p.add_run(pk_s.strip() + ': ').bold = True
                     parsuj_i_formatuj_tekst(p, zk_s)
                     continue
             p = doc.add_paragraph(); parsuj_i_formatuj_tekst(p, l_s)
@@ -157,24 +157,49 @@ with tab1:
         if st.button("🚀 Generuj i wypełnij szablon", type="primary", key="btn_gen"):
             if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz transkrypcję!")
             else:
-                with st.spinner("Analiza kliniczna i zaawansowana selekcja materiałów..."):
+                with st.spinner("Analiza kliniczna i dopasowywanie załączników..."):
                     try:
                         csv_url = LINK_DO_ARKUSZA.replace('/edit?usp=sharing', '/export?format=csv')
                         df = pd.read_csv(csv_url); l_p = ""
                         for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Tytuł: {r['Nazwa']} | Kiedy dołączyć (Wskazanie): {r['Opis dla AI']}\n"
                         
                         genai.configure(api_key=api_key)
-                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. Zachowujesz rygorystyczną spójność i strukturę bez samowolnej zmiany nazw nagłówków.")
+                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. Precyzyjnie zarządzasz strukturą dokumentu i dołączasz tylko w 100% pasujące linki medyczne.")
                         
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyselekcjonowane adresy URL z bazy, jeśli ich warunek kliniczny został spełniony.\n- Pod nimi dodaj dokładnie te zdania końcowe:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
-                                # Automatyczne wymuszenie stałego bloku wiedzy o innych smaczkach komercyjnych
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_INNE_SMACZKI_STALY}\n\n"
+                            elif naglowek == "Wprowadzanie suplementów:":
+                                # Inteligentny dynamiczny szablon tranzycji z polami alertu 'Dodatkowo: [BRAK INFORMACJI]'
+                                instrukcja_szablonu += (
+                                    f"## {naglowek}\n"
+                                    "Proszę zacząć od:\n• Wody\n• Mięsa\n• Podrobów\n• tłuszczu\n• Tauryny\n"
+                                    "Proszę przygotować dietę tylko z ich zawartością i na razie pominąć pozostałe suplementy.\n\n"
+                                    "Jak Kicia będzie się dobrze czuła, na następny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
+                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
+                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
+                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
+                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
+                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
+                                    "To będzie już kompletna dieta.\n\n"
+                                )
                             else:
                                 prefix = "" if naglowek.startswith("###") else "## "
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Uzupełnij precyzyjnymi faktami medycznymi z transkrypcji.\n"
