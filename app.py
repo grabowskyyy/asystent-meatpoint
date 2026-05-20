@@ -125,7 +125,7 @@ with tab1:
                     except Exception as e: st.error(f"🚨 Błąd: {e}")
 
 # ==============================================================================
-# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (Naprawiona Logika)
+# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (Naprawa Usuwania Nagrań)
 # ==============================================================================
 with tab2:
     st.title("🎙️ Inteligentny Edytor Głosowy Protokółów")
@@ -133,6 +133,8 @@ with tab2:
     if 'sekcje_dokumentu' not in st.session_state: st.session_state.sekcje_dokumentu = None
     if 'koszyk_nagran' not in st.session_state: st.session_state.koszyk_nagran = {}
     if 'v_key' not in st.session_state: st.session_state.v_key = str(uuid.uuid4())
+    # Inicjalizacja czarnej listy dla usuwanych nagrań
+    if 'usuniete_sekcje' not in st.session_state: st.session_state.usuniete_sekcje = set()
 
     col_top1, col_top2 = st.columns([3, 1])
     with col_top1:
@@ -142,6 +144,7 @@ with tab2:
         if st.button("🔄 Nowy protokół / Reset", type="secondary", use_container_width=True):
             st.session_state.sekcje_dokumentu = None
             st.session_state.koszyk_nagran = {}
+            st.session_state.usuniete_sekcje = set()
             st.session_state.v_key = str(uuid.uuid4())
             st.rerun()
             
@@ -158,17 +161,26 @@ with tab2:
             wybrana_sekcja = st.selectbox("Wybierz nagłówek, do którego chcesz dodać nagranie:", list(st.session_state.sekcje_dokumentu.keys()), key="sel_voice")
             st.text_area("📄 Aktualna treść sekcji:", value=st.session_state.sekcje_dokumentu[wybrana_sekcja], height=220, disabled=True, key=f"t_{wybrana_sekcja}")
             
-            audio_instrukcja = mic_recorder(start_prompt="🎙️ Nagraj uwagę dla tej sekcji", stop_prompt="🛑 Zatrzymaj i zapisz w pamięci", key=f"rec_{wybrana_sekcja}_{st.session_state.v_key}")
+            # Unikalny ID widgetu nagrywania dla wybranej sekcji
+            mic_id = f"rec_{wybrana_sekcja}_{st.session_state.v_key}"
+            audio_instrukcja = mic_recorder(start_prompt="🎙️ Nagraj uwagę dla tej sekcji", stop_prompt="🛑 Zatrzymaj i zapisz w pamięci", key=mic_id)
+            
             if audio_instrukcja:
-                st.session_state.koszyk_nagran[wybrana_sekcja] = audio_instrukcja['bytes']
-                st.toast(f"✅ Dodano nagranie do sekcji: {wybrana_sekcja}!")
+                # Jeśli sekcja była wcześniej usunięta, ale użytkownik nagrał coś nowego -> zdejmij ją z czarnej listy
+                if wybrana_sekcja in st.session_state.usuniete_sekcje:
+                    st.session_state.usuniete_sekcje.remove(wybrana_sekcja)
+                
+                # Zapisujemy nagranie tylko wtedy, gdy sekcja nie widnieje na czarnej liście usuniętych
+                if wybrana_sekcja not in st.session_state.usuniete_sekcje and wybrana_sekcja not in st.session_state.koszyk_nagran:
+                    st.session_state.koszyk_nagran[wybrana_sekcja] = audio_instrukcja['bytes']
+                    st.toast(f"✅ Dodano nagranie do sekcji: {wybrana_sekcja}!")
+                    st.rerun()
 
         with col_ed2:
             st.markdown("### 2️⃣ Lista zarejestrowanych uwag głosowych")
             if not st.session_state.koszyk_nagran:
                 st.info("Brak oczekujących nagrań. Wybierz sekcję po lewej stronie i nagraj głos.")
             else:
-                # POPRAWKA: Pętla na kopię kluczy zapobiega błędom mutacji słownika w locie
                 for s_nazwa in list(st.session_state.koszyk_nagran.keys()):
                     if s_nazwa in st.session_state.koszyk_nagran:
                         a_bytes = st.session_state.koszyk_nagran[s_nazwa]
@@ -176,9 +188,12 @@ with tab2:
                         c_box1.markdown(f"**📌 {s_nazwa}**")
                         c_box1.audio(a_bytes, format="audio/wav")
                         
-                        # POPRAWKA: Przycisk X używa uproszczonego klucza opartego o stały ciąg znaków
-                        if c_box2.button("❌", key=f"del_{s_nazwa}"):
-                            del st.session_state.koszyk_nagran[s_nazwa]
+                        # KLUCZOWE ROZWIĄZANIE: Przycisk X wrzuca sekcję na czarną listę usuniętych
+                        if c_box2.button("❌", key=f"del_{s_nazwa}", help="Usuń to nagranie"):
+                            st.session_state.usuniete_sekcje.add(s_nazwa)
+                            if s_nazwa in st.session_state.koszyk_nagran:
+                                del st.session_state.koszyk_nagran[s_nazwa]
+                            st.toast(f"🗑️ Usunięto nagranie z sekcji: {s_nazwa}")
                             st.rerun()
                 
                 st.markdown("---")
@@ -197,11 +212,12 @@ with tab2:
                                     st.session_state.sekcje_dokumentu[s_nazwa] = response_edycja.text.strip()
                                 
                                 st.session_state.koszyk_nagran = {} 
+                                st.session_state.usuniete_sekcje = set() # Czyszczenie czarnej listy po udanej edycji
                                 st.success("🎉 Wszystkie sekcje zostały pomyślnie zaktualizowane!")
                                 st.rerun()
                             except Exception as e: st.error(f"🚨 Błąd edytora: {e}")
 
-        # POPRAWKA: Przycisk pobierania jest teraz renderowany niezależnie od stanu koszyka
+        # Sekcja eksportu pliku (.docx)
         st.markdown("---")
         st.markdown("### 3️⃣ Pobieranie gotowego dokumentu")
         if st.button("📦 Generuj finalny plik Word z poprawkami", type="primary", key="btn_build_final"):
