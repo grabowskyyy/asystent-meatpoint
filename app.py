@@ -20,7 +20,6 @@ STRUKTURA_PROTOKOLU = [
     "Badania kontrolne:", "Załączniki:"
 ]
 
-# Stałe bloki edukacyjne dla automatyzacji procesów na blogu i YouTube
 TEKST_TYNDALIZACJA_STALY = (
     "Jeżeli robią Państwo dietę na dłużej niż 5-6 dni (mowa o diecie surowej) i chcą Państwo "
     "ją bezpiecznie przechowywać w słoiczkach w lodówce (bez zamrażania) LUB przygotowują Państwo "
@@ -39,6 +38,29 @@ TEKST_INNE_SMACZKI_STALY = (
     "Szczegółowy poradnik oraz instrukcję, jak samodzielnie wyliczyć kaloryczność dowolnego produktu komercyjnego "
     "na podstawie danych z etykiety, znajdą Państwo w naszym artykule: "
     "https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow"
+)
+
+TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
+    "Proszę zacząć od:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• tłuszczu\n• Tauryny\n"
+    "Proszę przygotować dietę tylko z ich zawartością i na razie pominąć pozostałe suplementy.\n\n"
+    "Jak Kicia będzie się dobrze czuła, na następny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszen przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n"
+    "• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n"
+    "• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
+    "• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
+    "• Dodatkowo: \n\n"
+    "To będzie już kompletna dieta."
 )
 
 def segmentuj_docx(file_bytes):
@@ -98,15 +120,14 @@ def konwertuj_do_docx(tekst_md):
         sec.header.paragraphs[0].paragraph_format.space_after = Pt(0)
         sec.header.paragraphs[0].add_run().add_picture("logo.png", width=Inches(1.0))
 
-    w_metryczce = True
-
     for line in tekst_md.split('\n'):
         l_s = line.strip()
         if not l_s: continue
         l_s = l_s.replace('**', '')
         
         if "DATA WIZYTY:" in l_s.upper():
-            p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(6)
             poczatek_daty, *koniec_daty = l_s.split(':', 1)
             p.add_run(poczatek_daty + ': ').bold = True
@@ -120,7 +141,8 @@ def konwertuj_do_docx(tekst_md):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(8), Pt(2)
             r = p.add_run(l_s.replace('### ', '')); r.bold, r.font.size = True, Pt(10.5)
         elif l_s.startswith('- ') or l_s.startswith('* ') or l_s.startswith('• '):
-            c_t = l_s.lstrip('-*• ').strip(); p = doc.add_paragraph(style='List Bullet'); p.paragraph_format.space_after = Pt(3)
+            c_t = l_s.lstrip('-*• ').strip()
+            p = doc.add_paragraph(style='List Bullet'); p.paragraph_format.space_after = Pt(3)
             if ':' in c_t and not c_t.strip().startswith('http'):
                 pk_s, zk_s = c_t.split(':', 1)
                 if len(pk_s) < 45: p.add_run(pk_s.strip() + ': ').bold = True; parsuj_i_formatuj_tekst(p, zk_s); continue
@@ -144,18 +166,56 @@ with st.sidebar:
     api_key = st.text_input("Klucz API Gemini", type="password")
     model_choice = st.selectbox("Wybierz model", ["gemini-3.5-flash", "gemini-3.1-pro"])
 
-tab1, tab2 = st.tabs(["🚀 Generator Protokołów", "🎙️ Głosowy Edytor (Voice Editor)"])
+tab1, tab2 = st.tabs(["🚀 Automatyczny Transkrybent i Generator", "🎙️ Głosowy Edytor (Voice Editor)"])
 
+# ==============================================================================
+# 🚀 ZAKŁADKA 1: AUDIO/VIDEO HUB I GENERATOR PROTOKOŁÓW
+# ==============================================================================
 with tab1:
-    st.title("🐾 MeatPoint.io - Asystent Dietetyczny")
-    col1, col2 = st.columns([1, 1], gap="large")
-    transcript = col1.text_area("🔊 Wklej tutaj tekst transkrypcji z Google Meet:", height=550, key="transkrypcja_gen")
+    st.title("🐾 Multimedialny Hub MeatPoint.io")
+    st.markdown("Wgraj plik wideo z Google Meet lub nagranie głosowe z konsultacji. Model automatycznie stworzy transkrypcję i wygeneruje finalny protokół.")
     
+    col1, col2 = st.columns([1, 1], gap="large")
+    
+    with col1:
+        st.markdown("### 1️⃣ Wgranie pliku i Transkrypcja")
+        media_file = st.file_uploader("📂 Wybierz plik audio lub wideo (.mp4, .mp3, .wav, .m4a):", type=["mp4", "mp3", "wav", "m4a"])
+        
+        # Pamięć podręczna dla wygenerowanej transkrypcji
+        if 'aktywna_transkrypcja' not in st.session_state: st.session_state.aktywna_transkrypcja = ""
+        
+        if st.button("🎙️ Uruchom inteligentną transkrypcję AI", type="secondary", use_container_width=True):
+            if not api_key or not media_file: st.error("❌ Podaj klucz API oraz wgraj plik!")
+            else:
+                with st.spinner("Skanowanie i odsłuchiwanie pliku przez Gemini (to może chwilę potrwać)..."):
+                    try:
+                        genai.configure(api_key=api_key)
+                        # Zapis surowych bajtów do pamięci i wysyłka do API
+                        f_bytes = media_file.read()
+                        m_type = media_file.type
+                        audio_data = {"data": f_bytes, "mime_type": m_type}
+                        
+                        model_transkrybent = genai.GenerativeModel(model_name="gemini-3.5-flash")
+                        prompt_tr = (
+                            "Przeanalizuj to nagranie audio/wideo z wizyty dietetycznej zwierzęcia. "
+                            "Stwórz bardzo dokładną transkrypcję ortograficzną słowo w słowo. "
+                            "Zastosuj wyraźny podział na role (Diarization), oznaczając kiedy mówi Ania (Dietetyk), "
+                            "a kiedy właściciel zwierzęcia (Opiekun). Nie pomijaj żadnych nazw leków, dawek ani wyników badań."
+                        )
+                        response_tr = model_transkrybent.generate_content([prompt_tr, audio_data])
+                        st.session_state.aktywna_transkrypcja = response_tr.text
+                        st.success("✅ Transkrypcja wygenerowana pomyślnie!")
+                    except Exception as e: st.error(f"🚨 Błąd transkrypcji: {e}")
+        
+        # Okno podglądu i ręcznej edycji transkrypcji (bez limitów znaków)
+        transcript = st.text_area("📝 Podgląd / Edycja tekstu transkrypcji:", value=st.session_state.aktywna_transkrypcja, height=380, key="transkrypcja_obszar")
+
     with col2:
-        st.subheader("📋 Wynikowy Protokół Wizyty")
+        st.markdown("### 2️⃣ Budowanie gotowego dokumentu Word")
         LINK_DO_ARKUSZA = "https://docs.google.com/spreadsheets/d/1qgSX_t4_fb36CqtFUluPDKDQILpR9_SLOlYBPTXSTes/edit?usp=sharing"
-        if st.button("🚀 Generuj i wypełnij szablon", type="primary", key="btn_gen"):
-            if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz transkrypcję!")
+        
+        if st.button("🚀 Wygeneruj i uzupełnij Protokół Word", type="primary", use_container_width=True):
+            if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz upewnij się, że transkrypcja nie jest pusta!")
             else:
                 with st.spinner("Analiza kliniczna i dopasowywanie załączników..."):
                     try:
@@ -164,42 +224,18 @@ with tab1:
                         for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Tytuł: {r['Nazwa']} | Kiedy dołączyć (Wskazanie): {r['Opis dla AI']}\n"
                         
                         genai.configure(api_key=api_key)
-                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. Precyzyjnie zarządzasz strukturą dokumentu i dołączasz tylko w 100% pasujące linki medyczne.")
+                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. Zachowujesz rygorystyczną spójność i strukturę bez samowolnej zmiany nazw nagłówków.")
                         
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyselekcjonowane adresy URL z bazy, jeśli ich warunek kliniczny został spełniony.\n- Pod nimi dodaj dokładnie te zdania końcowe:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_INNE_SMACZKI_STALY}\n\n"
                             elif naglowek == "Wprowadzanie suplementów:":
-                                # Inteligentny dynamiczny szablon tranzycji z polami alertu 'Dodatkowo: [BRAK INFORMACJI]'
-                                instrukcja_szablonu += (
-                                    f"## {naglowek}\n"
-                                    "Proszę zacząć od:\n• Wody\n• Mięsa\n• Podrobów\n• tłuszczu\n• Tauryny\n"
-                                    "Proszę przygotować dietę tylko z ich zawartością i na razie pominąć pozostałe suplementy.\n\n"
-                                    "Jak Kicia będzie się dobrze czuła, na następny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
-                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
-                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
-                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
-                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
-                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję i wypisz po przecinku zalecane dodatki medyczne na tym etapie, a jeśli Anna nic nie wymieniła, pozostaw sztywno napis [BRAK INFORMACJI]]\n\n"
-                                    "To będzie już kompletna dieta.\n\n"
-                                )
+                                instrukcja_szablonu += f"## {naglowek}\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
                             else:
                                 prefix = "" if naglowek.startswith("###") else "## "
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Uzupełnij precyzyjnymi faktami medycznymi z transkrypcji.\n"
@@ -207,10 +243,13 @@ with tab1:
                         p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
                         
                         res = m.generate_content(p)
-                        st.text_area("Podgląd tekstu:", value=res.text, height=350, key="podglad_gen")
-                        st.download_button("📥 POBIERZ PLIK WORD (.DOCX)", konwertuj_do_docx(res.text), "Protokol_MeatPoint.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                    except Exception as e: st.error(f"🚨 Błąd: {e}")
+                        st.text_area("Podgląd tekstu wynikowego:", value=res.text, height=350, key="podglad_gen")
+                        st.download_button("📥 POBIERZ GOTOWY PLIK WORD (.DOCX)", konwertuj_do_docx(res.text), "Protokol_MeatPoint.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    except Exception as e: st.error(f"🚨 Błąd generatora: {e}")
 
+# ==============================================================================
+# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW
+# ==============================================================================
 with tab2:
     st.title("🎙️ Inteligentny Edytor Głosowy Protokółów")
     
