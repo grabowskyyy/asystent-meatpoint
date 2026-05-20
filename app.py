@@ -7,7 +7,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
-# --- DOKŁADNA STRUKTURA MEDYCZNA ANNY (Zmapowana 1:1 z plikiem Word) ---
+# --- RESTRYKCYJNA STRUKTURA MEDYCZNA ANNY ---
 STRUKTURA_PROTOKOLU = [
     "POWÓD KONSULTACJI", "AKTUALNE SAMOPOCZUCIE", "KAŁ / BIEGUNKA / WYMIOTY", 
     "STATUS MIKCJI (MOCZ)", "ODROBACZANIE", "AKTUALNE BADANIA LABORATORYJNE", 
@@ -78,7 +78,6 @@ def konwertuj_do_docx(tekst_md):
         sec.header.paragraphs[0].paragraph_format.space_after = Pt(0)
         sec.header.paragraphs[0].add_run().add_picture("logo.png", width=Inches(1.0))
 
-    # Blok flagi do kontrolowania czy przeszliśmy już przez górną metryczkę
     w_metryczce = True
 
     for line in tekst_md.split('\n'):
@@ -86,41 +85,36 @@ def konwertuj_do_docx(tekst_md):
         if not l_s: continue
         l_s = l_s.replace('**', '')
         
-        # 1. Wyśrodkowana i sformatowana linia Daty Wizyty
+        # ODWZOROWANIE SZABLONU ANNY: Data wizyty ZAWSZE wyśrodkowana na samej górze (nad metryczką)
         if "DATA WIZYTY:" in l_s.upper():
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(16)
+            p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(14)
             poczatek_daty, *koniec_daty = l_s.split(':', 1)
             p.add_run(poczatek_daty + ': ').bold = True
             if koniec_daty: parsuj_i_formatuj_tekst(p, koniec_daty[0].strip())
-            w_metryczce = False # Wyjście z bloku górnej metryczki
             continue
 
-        # 2. Formatowanie dużych nagłówków medycznych (Pomarańczowe)
         if l_s.startswith('## '):
+            w_metryczce = False # Wykryto pierwszy nagłówek kliniczny - definitywny koniec metryczki
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
             r = p.add_run(l_s.replace('## ', '')); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
         elif l_s.startswith('### '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(8), Pt(2)
             r = p.add_run(l_s.replace('### ', '')); r.bold, r.font.size = True, Pt(10.5)
-            
-        # 3. Formatowanie podpunktów z myślnikami
         elif l_s.startswith('- ') or l_s.startswith('* '):
             c_t = l_s.lstrip('-* ').strip(); p = doc.add_paragraph(style='List Bullet'); p.paragraph_format.space_after = Pt(3)
             if ':' in c_t and not c_t.strip().startswith('http'):
                 pk_s, zk_s = c_t.split(':', 1)
                 if len(pk_s) < 45: p.add_run(pk_s.strip() + ':').bold = True; parsuj_i_formatuj_tekst(p, zk_s); continue
             parsuj_i_formatuj_tekst(p, c_t)
-            
-        # 4. Inteligentne formatowanie linii metryczki (Tabulatory pionowe u góry strony)
         else:
             if ':' in l_s and not l_s.strip().startswith('http'):
                 pk_s, zk_s = l_s.split(':', 1)
                 if len(pk_s) < 45: 
                     p = doc.add_paragraph()
                     if w_metryczce:
-                        p.add_run(pk_s.strip() + ':\t').bold = True # Kluczowy tabulator wyrównania
+                        p.add_run(pk_s.strip() + ':\t').bold = True # Pionowy tabulator dla Kici
                     else:
                         p.add_run(pk_s.strip() + ': ').bold = True
                     parsuj_i_formatuj_tekst(p, zk_s)
@@ -138,10 +132,6 @@ with st.sidebar:
 
 tab1, tab2 = st.tabs(["🚀 Generator Protokołów", "🎙️ Głosowy Edytor (Voice Editor)"])
 
-SZABLON_TEXT = ""
-if os.path.exists("szablon.txt"):
-    with open("szablon.txt", "r", encoding="utf-8") as f: SZABLON_TEXT = f.read()
-
 with tab1:
     st.title("🐾 MeatPoint.io - Asystent Dietetyczny")
     col1, col2 = st.columns([1, 1], gap="large")
@@ -153,17 +143,17 @@ with tab1:
         if st.button("🚀 Generuj i wypełnij szablon", type="primary", key="btn_gen"):
             if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz transkrypcję!")
             else:
-                with st.spinner("Analiza kliniczna i dobór linków..."):
+                with st.spinner("Analiza kliniczna i dopasowywanie załączników..."):
                     try:
                         csv_url = LINK_DO_ARKUSZA.replace('/edit?usp=sharing', '/export?format=csv')
                         df = pd.read_csv(csv_url); l_p = ""
-                        for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Nazwa: {r['Nazwa']} | Kiedy: {r['Opis dla AI']}\n"
+                        for _, r in df.iterrows(): l_p += f"- Materiał edukacyjny: {r['URL']} | Nazwa tematu: {r['Nazwa']} | Kiedy użyć (Zastosowanie): {r['Opis dla AI']}\n"
                         
                         genai.configure(api_key=api_key)
-                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś doświadczonym asystentem medycznym dla MeatPoint.io. Twoim zadaniem jest precyzyjne uzupełnienie metryczki i nagłówków. Brak danych oznacz jako [BRAK INFORMACJI].")
+                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś rygorystycznym, profesjonalnym asystentem medycznym dla MeatPoint.io. Dbasz o czystość struktury dokumentów i bezbłędne przypisywanie tylko dopasowanych tematycznie materiałów.")
                         
-                        instrukcja_szablonu = "\n".join([f"## {naglowek}\n- Uzupełnij na podstawie danych." for naglowek in STRUKTURA_PROTOKOLU])
-                        p = f"Przeanalizuj transkrypcję wizyty.\n\nKROK 1: Na samej górze wygeneruj dokładnie te linie metryczki podstawowej (jeśli brak danych wstaw [BRAK INFORMACJI]):\nDane Opiekuna: imię i nazwisko\nPacjent: imię\nGatunek: gatunek\nRasa: rasa\nWiek: wiek\nWaga: aktualna masa ciała\nBCS: ocena kondycji\nIlość zwierząt w domu: liczba\nSterylizacja/kastracja: status\n\nKROK 2: Bezpośrednio pod metryczką stwórz wyśrodkowaną linię daty: 'Data wizyty: DD.MM.YYYY'\n\nKROK 3: Pod datą umieść sformatowane medyczne nagłówki:\n{instrukcja_szablonu}\n\nZewnętrzne materiały wideo i linki:\n{l_p}\n\nTranskrypcja rozmowy:\n{transcript}"
+                        instrukcja_szablonu = "\n".join([f"## {naglowek}\n- Uzupełnij merytorycznie i precyzyjnie na podstawie transkrypcji." for naglowek in STRUKTURA_PROTOKOLU])
+                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nZbuduj dokument według ściśle określonej poniższej kolejności:\n\nKROK 1: Na samym początku wygeneruj linię daty: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz czyste linie metryczki pacjenta (BEZ znaków '##'):\nDane Opiekuna: imię i nazwisko\nPacjent: imię\nGatunek: gatunek\nRasa: rasa\nWiek: wiek\nWaga: waga\nBCS: kondycja\nIlość zwierząt w domu: liczba\nSterylizacja/kastracja: status\n\nKROK 3: Pod metryczką umieść poniższą strukturę medyczną:\n{instrukcja_szablonu}\n\n🚨 RESTRYKCYJNA SELEKCJA LINKÓW EDUKACYJNYCH:\nMasz do dyspozycji poniższą bazę linków zewnętrznych:\n{l_p}\n\nZAKAZ używania wszystkich linków na raz! Przeczytaj uważnie pole 'Kiedy użyć (Zastosowanie)'. Wpleć dany link w treść akapitu TYLKO I WYŁĄCZNIE wtedy, gdy bezpośrednio dotyczy problemu omawianego w danej sekcji u tego konkretnego pacjenta. Jeśli żaden link z bazy nie pasuje idealnie do kontekstu danej sekcji, nie dodawaj tam żadnego adresu URL.\n\nTranskrypcja:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu:", value=res.text, height=350, key="podglad_gen")
