@@ -11,69 +11,171 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
-# --- DANE SZABLONU KLINICZNEGO MEATPOINT ---
-SZABLON_PRODUKCYJNY = """
-Data wizyty: [Wpisz datę wizyty lub BRAK INFORMACJI]
+# --- DANE SZABLONU ŁADOWANE Z PLIKU TEKSTOWEGO ---
+if os.path.exists("szablon.txt"):
+    with open("szablon.txt", "r", encoding="utf-8") as f:
+        SZABLON_PRODUKCYJNY = f.read()
+else:
+    SZABLON_PRODUKCYJNY = "Błąd: Brak pliku szablon.txt w repozytorium!"
 
-## DANE FORMALNE OPIEKUNA
-- **Imię i Nazwisko:** [Imię i nazwisko opiekuna]
-- **Adres zamieszkania:** [Adres zamieszkania opiekuna (ulica, kod, miasto)]
-- **Numer PESEL:** [Numer PESEL opiekuna]
-- **Numer telefonu:** [Numer telefonu kontaktowego]
-- **Adres e-mail:** [Adres e-mail opiekuna]
+# --- SEGMENTATOR PLIKÓW DOCX ---
+def segmentuj_docx(file_bytes):
+    doc = Document(BytesIO(file_bytes))
+    sekcje = {}
+    biezaca_sekcja = "Nagłówek i Data wizyty"
+    sekcje[biezaca_sekcja] = []
+    
+    znane_naglowki = [
+        "DANE FORMALNE OPIEKUNA", "DANE PACJENTA", "WYWIAD KLINICZNY",
+        "WYPRÓŻNIENIA I OBJAWY GASTRYCZNE", "AKTUALNE BADANIA LABORATORYJNE",
+        "AKTUALNE LEKI I SUPLEMENTY MEDYCZNE", "KOMENTARZ DO WYWIADU I GŁÓWNE ZAŁOŻENIA DIETY",
+        "EDUKACJA OPIEKUNA", "HISTORIA ŻYWIENIOWA I PREFERENCJE SMAKOWE",
+        "SPECYFIKACJA NOWEGO PLANU DIETETYCEDNEGO", "GOSPODARKA WODNA (PICIU)",
+        "SUPLEMENTACJA DODATKOWA (CELOWANA)", "WIĄZANIE FOSFORU I GOSPODARKA ŻELAZEM",
+        "AWARYJNE KARMY KOMERCYJNE", "HARMONOGRAM TRANZYCJI",
+        "HARMONOGRAM BADAŃ KONTROLNYCH", "ZAŁOŻONE ZAŁĄCZNIKI"
+    ]
+    
+    for p in doc.paragraphs:
+        tekst = p.text.strip()
+        if not tekst:
+            continue
+        znaleziono_naglowek = False
+        for naglowek in znane_naglowki:
+            if naglowek in tekst.upper() and len(tekst) < 65:
+                biezaca_sekcja = naglowek
+                if biezaca_sekcja not in sekcje:
+                    sekcje[biezaca_sekcja] = []
+                znaleziono_naglowek = True
+                break
+        if not znaleziono_naglowek:
+            sekcje[biezaca_sekcja].append(tekst)
+            
+    for k in sekcje:
+        sekcje[k] = "\n".join(sekcje[k])
+    return sekcje
 
-## DANE PACJENTA
-- **Pacjent:** [Imię zwierzęcia]
-- **Gatunek:** [Kot/Pies]
-- **Rasa:** [Rasa pacjenta]
-- **Wiek:** [Wiek pacjenta]
-- **Waga:** [Aktualna waga, tendencje wagowe i waga docelowa]
-- **BCS:** [Ocena kondycji w skali 1-9/9 oraz krótki opis fizyczny sylwetki]
-- **Ilość zwierząt w domu:** [Liczba zwierząt w stadzie, status pacjenta i relacje]
-- **Sterylizacja/kastracja:** [Tak/Nie + rok i miejsce zabiegu]
+def add_hyperlink(paragraph, url, text):
+    part = paragraph.part
+    r_id = part.relate_to(url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True)
+    hyperlink = OxmlElement('w:hyperlink')
+    hyperlink.set(qn('r:id'), r_id)
+    new_run = OxmlElement('w:r')
+    rPr = OxmlElement('w:rPr')
+    c = OxmlElement('w:color')
+    c.set(qn('w:val'), '0563C1')  
+    rPr.append(c)
+    u = OxmlElement('w:u')
+    u.set(qn('w:val'), 'single')  
+    rPr.append(u)
+    new_run.append(rPr)
+    text_node = OxmlElement('w:t')
+    text_node.text = text
+    new_run.append(text_node)
+    hyperlink.append(new_run)
+    paragraph._p.append(hyperlink)
+    return hyperlink
 
-## WYWIAD KLINICZNY
-- **Powód konsultacji:** [Historia schorzenia, zdiagnozowane jednostki chorobowe np. PNN, IBD, zapalenie trzustki oraz główne oczekiwania i cele opiekuna wobec diety]
-- **Aktualne samopoczucie:** [Zachowanie pacjenta, przebyte niedawno zabiegi np. sanacja jamy ustnej, stan po zabiegu]
-- **Aktywność:** [Umiarkowana/duża, adekwatność do aktualnego stanu zdrowia]
-- **Apetyt:** [Stan apetytu, częstotliwość podawania karmy w ciągu doby, historia wybredności]
-- **Pragnienie:** [Ilość samodzielnego picia, częstotliwość, stosowane kroplówki - objętość dobowa i rodzaj płynów, plany redukcji płynoterapii]
+def parsuj_i_formatuj_tekst(paragraph, tekst):
+    czesci_brak = tekst.split('[BRAK INFORMACJI]')
+    for index_brak, czesc_brak in enumerate(czesci_brak):
+        if czesc_brak:
+            segmenty_url = re.split(r'(https?://[^\s]+)', czesc_brak)
+            for idx_seg, seg in enumerate(segmenty_url):
+                if idx_seg % 2 == 1:
+                    add_hyperlink(paragraph, seg, seg)
+                else:
+                    if seg:
+                        run = paragraph.add_run(seg)
+                        run.bold = False
+        if index_brak < len(czesci_brak) - 1:
+            run_alert = paragraph.add_run('[BRAK INFORMACJI]')
+            run_alert.bold = True
+            run_alert.font.color.rgb = RGBColor(220, 38, 38)
 
-## WYPRÓŻNIENIA I OBJAWY GASTRYCZNE
-- **Kał:** [Częstotliwość na dobę, uformowanie, zapach, konsystencja, opis jelit z USG pod kątem zmian typowych dla IBD]
-- **Wymioty:** [Częstotliwość występowania, po jakich pokarmach lub lekach]
-- **Mocz:** [Barwa, klarowność, ciężar właściwy, proteinuria/białko, obecność erytrocytów, infekcje, dobowy schemat mikcji]
-- **Odrobaczanie:** [Ostatnia data odrobaczania, powód, forma podania i preparat]
+def konwertuj_do_docx(tekst_markdown):
+    doc = Document()
+    for section in doc.sections:
+        section.top_margin = Inches(1.3)
+        section.bottom_margin = Inches(0.8)
+        section.left_margin = Inches(0.8)
+        section.right_margin = Inches(0.8)
+        section.header_distance = Inches(0.4)
 
-## AKTUALNE BADANIA LABORATORYJNE
-[Zestawienie najnowszych wyników wraz z datami i interpretacją trendu klinicznego]:
-- **Kreatynina:** [Wartość + jednostka + trend]
-- **Mocznik:** [Wartość + jednostka + trend]
-- **Fosfor:** [Wartość + jednostka + trend]
-- **T4 całkowita:** [Wartość + jednostka + trend]
-- **Morfologia (HGB / Anemia):** [Wartość HGB, stan układu czerwonokrwinkowego, diagnoza niedokrwistości]
-- **Albuminy:** [Wartość + jednostka + trend]
-- **&alpha;-amylaza:** [Wartość + jednostka + trend]
-- **Cholesterol:** [Wartość + jednostka + trend]
-- **WBC (Leukocyty):** [Wartość + stan zapalny/infekcja]
-- **Gospodarka cukrowa (Fruktozamina):** [Wartość fruktozaminy, glukoza w moczu, wykluczenie/potwierzenie cukrzycy]
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Arial'
+    font.size = Pt(10.5)
+    style.paragraph_format.line_spacing = 1.25
+    style.paragraph_format.space_after = Pt(4)
 
-## AKTUALNE LEKI I SUPLEMENTY MEDYCZNE
-[Pełna lista przyjmowanych preparatów, dawkowanie, częstotliwość i od kiedy są stosowane]
+    section = doc.sections[0]
+    section.different_first_page_header_footer = True  
 
-## KOMENTARZ DO WYWIADU I GŁÓWNE ZAŁOŻENIA DIETY
-- **Komentarz:** [Podsumowanie stopnia trudności pacjenta, tolerancji składników i wymaganych kompromisów klinicznych między nerkami a przewodem pokarmowym]
-- **Główne założenia diety:** [Kluczowe cele makroskładnikowe: poziom fosforu, jakość i strawność białka, poziomy tłuszczów i węglowodanów pod kątem trzustki, zasada stopniowego wdrażania]
+    tabela_naglowka = section.first_page_header.add_table(1, 2, Inches(6.7))
+    tabela_naglowka.autofit = False
+    tblPr = tabela_naglowka._tbl.tblPr
+    tblBorders = OxmlElement('w:tblBorders')
+    for border_name in ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']:
+        border = OxmlElement(f'w:{border_name}')
+        border.set(qn('w:val'), 'none')
+        tblBorders.append(border)
+    tblPr.append(tblBorders)
 
-## EDUKACJA OPIEKUNA: CO SIĘ ZMIENI NA DIECIE BARF/BACF
-- **Częstotliwość kału:** Zwierzę może oddawać mniejszy kał i może go oddawać co 2–3 dni. Na wysokomięsnej diecie to normalne. Ważne, żeby był dobrego kształtu i konsystencji (wdł skali bristolskiej).
-- **UWAGA NA ZAPARCIA:** Należy odróżnić rzadkie oddawanie kału od zaparć. Jeśli pacjent na diecie BARF będzie miał: suchą kupę, twardą, bobki / rodzynki / kamyczki, z dużą ilością włosa… to może być zaparcie lub do niego prowadzić. Nie chodzi o samą częstotliwość oddawania stolca, ale o jego wygląd i o zachowanie w kuwecie.
-- **Parametry krwi:** Parametry nerkowe krwi na wysoko mięsnej diecie mogą się różnić od zdrowych zwierząt (nie tylko z powodu choroby nerek), zwłaszcza mocznik i kreatynina. W zależności od pozostałych parametrów i samopoczucia - nie oznacza od razu pogorszenia choroby nerek. Ważna jest stała kontrola u nefrologa: badanie USG, SDMA, badania moczu i stanu ogólnego, być może FGF-23 - zgodnie z zaleceniami lekarza.
-- **Objętość posiłku:** Początkowo może się wydawać, że diety jest mało. Dieta BARF/BACF nerkowa jest bardziej kaloryczna i treściwa w mniejszej objętości niż puszki i saszetki. Przyzwyczajanie się do tej zmianzonej ilości może zająć ok. 2–3 miesiące i to jest normalne.
+    kol_lewa = tabela_naglowka.rows[0].cells[0]
+    kol_prawa = tabela_naglowka.rows[0].cells[1]
+    kol_lewa.width = Inches(4.9)
+    kol_prawa.width = Inches(1.8)
 
-## HISTORIA ŻYWIENIOWA I PREFERENCJE SMAKOWE
-- **Dotychczasowe żywienie:** [Opis dotychczasowych modeli żywienia, stosowane wcześniej przepisy, źródła białka, używane marki, stopień akceptacji i przyczyny rezygnacji/modyfikacji]
-- **KATEGORYCZNIE TAK (Ulubione smaki):** [Lista akceptowanych rodzajów mięs, części tuszy, podrobów, warzyw i forma podania. UWAGA: Podkreśl czy je potrawy mrożone czy tylko świeże/z lodówki]
-- **KATEGORYCZNIE NIE (Odrzucone składniki):** [Lista absolutnie odrzucanych przez zwierzę składników, mięs, form wapnia lub suplementów wywołujących wymioty, niechęć lub całkowity bunt]
+    p_kontakt = kol_lewa.paragraphs[0]
+    p_kontakt.paragraph_format.space_after = Pt(0)
+    p_kontakt.add_run("Anna Michalska\n").bold = True
+    p_kontakt.runs[-1].font.size = Pt(11)
+    
+    p_sub = p_kontakt.add_run("Dietetyka Psów i Kotów\n")
+    p_sub.font.size = Pt(9)
+    p_sub.font.color.rgb = RGBColor(100, 116, 139)
+    
+    p_det = p_kontakt.add_run("miesnepsokotki@gmail.com  |  https://www.facebook.com/meatpoint.io")
+    p_det.font.size = Pt(8.5)
+    p_det.font.color.rgb = RGBColor(100, 116, 139)
 
-## SPECYFIKACJA NOW
+    if os.path.exists("logo.png"):
+        kol_prawa.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        kol_prawa.paragraphs[0].paragraph_format.space_after = Pt(0)
+        kol_prawa.paragraphs[0].add_run().add_picture("logo.png", width=Inches(1.0))
+
+    if os.path.exists("logo.png"):
+        section.header.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        section.header.paragraphs[0].paragraph_format.space_after = Pt(0)
+        section.header.paragraphs[0].add_run().add_picture("logo.png", width=Inches(1.0))
+
+    for linia in tekst_markdown.split('\n'):
+        linia_strip = linia.strip()
+        if not linia_strip:
+            continue
+        linia_strip = linia_strip.replace('**', '')
+            
+        if linia_strip.startswith('## '):
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(14)
+            p.paragraph_format.space_after = Pt(4)
+            run = p.add_run(linia_strip.replace('## ', ''))
+            run.bold = True
+            run.font.size = Pt(12)
+            run.font.color.rgb = RGBColor(194, 65, 12)
+        elif linia_strip.startswith('### '):
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(8)
+            p.paragraph_format.space_after = Pt(2)
+            run = p.add_run(linia_strip.replace('### ', ''))
+            run.bold = True
+            run.font.size = Pt(10.5)
+        elif linia_strip.startswith('- ') or linia_strip.startswith('* '):
+            czysty_tekst = linia_strip.lstrip('-* ').strip()
+            p = doc.add_paragraph(style='List Bullet')
+            p.paragraph_format.space_after = Pt(3)
+            if ':' in czysty_tekst and not czysty_tekst.strip().startswith('http'):
+                przed_kolonem, za_kolonem = czysty_tekst.split(':', 1)
+                if len(przed_kolonem) < 45:
+                    p.add_run(przed_kolonem.strip() + ':
