@@ -82,6 +82,17 @@ def konwertuj_do_docx(tekst_md):
         l_s = line.strip()
         if not l_s: continue
         l_s = l_s.replace('**', '')
+        
+        # Wizualna stylizacja Daty Wizyty na środku ekranu
+        if "DATA WIZYTY:" in l_s.upper():
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(12)
+            r = p.add_run(l_s)
+            r.bold = True
+            r.font.size = Pt(11)
+            continue
+
         if l_s.startswith('## '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
             r = p.add_run(l_s.replace('## ', '')); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
@@ -97,8 +108,13 @@ def konwertuj_do_docx(tekst_md):
         else:
             if ':' in l_s and not l_s.strip().startswith('http'):
                 pk_s, zk_s = l_s.split(':', 1)
-                if len(pk_s) < 45: p = doc.add_paragraph(); p.add_run(pk_s.strip() + ':').bold = True; parsuj_i_formatuj_tekst(p, zk_s); continue
+                if len(pk_s) < 45: 
+                    p = doc.add_paragraph()
+                    p.add_run(pk_s.strip() + ':\t').bold = True # Dodany tabulator dla wyrównania metryczki pacjenta
+                    parsuj_i_formatuj_tekst(p, zk_s)
+                    continue
             p = doc.add_paragraph(); parsuj_i_formatuj_tekst(p, l_s)
+            
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
@@ -128,10 +144,10 @@ with tab1:
                         for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Nazwa: {r['Nazwa']} | Kiedy: {r['Opis dla AI']}\n"
                         
                         genai.configure(api_key=api_key)
-                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś asystentem medycznym dla MeatPoint.io. Twoim zadaniem jest wypełnienie nagłówków faktami z transkrypcji. Brak danych oznacz jako [BRAK INFORMACJI]. Pisz czysty tekst bez HTML/CSS.")
+                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś doświadczonym asystentem medycznym dla MeatPoint.io. Twoim zadaniem jest wyciągnięcie faktów z transkrypcji i uzupełnienie sekcji pacjenta. Brak danych oznacz jako [BRAK INFORMACJI]. Nie używaj tagów HTML.")
                         
-                        instrukcja_szablonu = "\n".join([f"## {naglowek}\n- Uzupełnij na podstawie transkrypcji." for naglowek in STRUKTURA_PROTOKOLU])
-                        p = f"Przeanalizuj transkrypcję i uzupełnij strukturę medyczną pacjenta.\n\nBaza linków edukacyjnych:\n{l_p}\n\nSTRUKTURA DO WYPEŁNIENIA:\nData wizyty:\n{instrukcja_szablonu}\n\nTranskrypcja rozmowy:\n{transcript}"
+                        instrukcja_szablonu = "\n".join([f"## {naglowek}\n- Uzupełnij precyzyjnie." for naglowek in STRUKTURA_PROTOKOLU])
+                        p = f"Przeanalizuj transkrypcję wizyty.\n\nWyciągnij datę rozmowy i sformatuj linię dokładnie jako: 'Data wizyty: DD.MM.YYYY'\n\nBaza linków edukacyjnych:\n{l_p}\n\nSTRUKTURA DO WYPEŁNIENIA:\n{instrukcja_szablonu}\n\nTranskrypcja:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu:", value=res.text, height=350, key="podglad_gen")
