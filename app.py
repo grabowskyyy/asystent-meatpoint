@@ -7,16 +7,17 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
-# --- DOKŁADNA STRUKTURA I NAZEWNICTWO 1:1 Z PLIKU ANNI ---
+# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA 1:1 Z DOKUMENTEM ANI ---
 STRUKTURA_PROTOKOLU = [
-    "POWÓD KONSULTACJI", "AKTUALNE SAMOPOCZUCIE", "KAŁ / BIEGUNKA / WYMIOTY", 
-    "MOCZ", "ODROBACZANIE", "BADANIA LABORATORYJNE", "LEKI I SUPLEMENTY MEDYCZNE", 
-    "KOMENTARZ", "GŁÓWNE ZAŁOŻENIA NOWEJ DIETY", "CO SIĘ ZMIENI NA DIECIE BARF/BACF", 
-    "DOTYCHCZASOWE ŻYWIENIE I HISTORIA SMAKOWA", "KATEGORYCZNIE TAK", 
-    "KATEGORYCZNIE NIE", "PRZECHOWYWANIE I LOGISTYKA PODAWANIA", 
-    "PLAN DIETETYCZNY", "WODA", "SUPLEMENTY", "WIĄZANIE FOSFORU / GOSPODARKA ŻELAZEM", 
-    "SMACZKI", "AWARYJNE KARMY KOMERCYJNE", "TRANZYCJA", "BADANIA KONTROLNE", 
-    "ZAŁĄCZNIKI I STOPKA"
+    "Powód konsultacji:", "Aktualne samopoczucie:", "Aktywność:", "Apetyt:", "Pragnienie:",
+    "Dotychczasowe żywienie:", "Smaczki i przysmaki:", "Ulubione smaki:",
+    "### Kategorycznie tak:", "### Kategorycznie nie:", "### Kluczowa uwaga dot. przechowywania:",
+    "Kał / Biegunka / Wymioty:", "Mocz:", "Odrobaczanie:", "Aktualne badania:", "Aktualne leki:",
+    "Komentarz do wywiadu:", "Główne założenia diety:", "Co się zmieni na diecie BARF/BACF:",
+    "Plan dietetyczny:", "Tranzycja i przechowywanie:", "Kaloryczność:", "Piciu:",
+    "### Jakiej wody używać?", "Suplementy dodatkowe:", "Wiązanie fosforu:", "Smaczki:",
+    "Inne smaczki:", "Karmy komercyjne:", "Tyndalizacja:", "Wprowadzanie suplementów:",
+    "Badania kontrolne:", "Załączniki:"
 ]
 
 def segmentuj_docx(file_bytes):
@@ -27,7 +28,8 @@ def segmentuj_docx(file_bytes):
         if not t: continue
         z = False
         for n in STRUKTURA_PROTOKOLU:
-            if n in t.upper() and len(t) < 65: biezaca = n; sekcje[biezaca] = []; z = True; break
+            czysty_n = n.replace("### ", "").strip().upper()
+            if czysty_n in t.upper() and len(t) < 65: biezaca = n; sekcje[biezaca] = []; z = True; break
         if not z: sekcje[biezaca].append(t)
     return {k: "\n".join(v) for k, v in sekcje.items()}
 
@@ -82,10 +84,8 @@ def konwertuj_do_docx(tekst_md):
         if not l_s: continue
         l_s = l_s.replace('**', '')
         
-        # Automatyczne wyśrodkowanie linii daty bez doklejania brzydkich dopisków
         if "DATA WIZYTY:" in l_s.upper():
-            p = doc.add_paragraph()
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(14)
             poczatek_daty, *koniec_daty = l_s.split(':', 1)
             p.add_run(poczatek_daty + ': ').bold = True
@@ -97,6 +97,7 @@ def konwertuj_do_docx(tekst_md):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
             r = p.add_run(l_s.replace('## ', '')); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
         elif l_s.startswith('### '):
+            w_metryczce = False
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(8), Pt(2)
             r = p.add_run(l_s.replace('### ', '')); r.bold, r.font.size = True, Pt(10.5)
         elif l_s.startswith('- ') or l_s.startswith('* '):
@@ -110,10 +111,7 @@ def konwertuj_do_docx(tekst_md):
                 pk_s, zk_s = l_s.split(':', 1)
                 if len(pk_s) < 45: 
                     p = doc.add_paragraph()
-                    if w_metryczce:
-                        p.add_run(pk_s.strip() + ':\t').bold = True
-                    else:
-                        p.add_run(pk_s.strip() + ': ').bold = True
+                    p.add_run(pk_s.strip() + (':\t' if w_metryczce else ': ')).bold = True
                     parsuj_i_formatuj_tekst(p, zk_s)
                     continue
             p = doc.add_paragraph(); parsuj_i_formatuj_tekst(p, l_s)
@@ -140,23 +138,24 @@ with tab1:
         if st.button("🚀 Generuj i wypełnij szablon", type="primary", key="btn_gen"):
             if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz transkrypcję!")
             else:
-                with st.spinner("Analiza kliniczna i selekcja materiałów..."):
+                with st.spinner("Analiza kliniczna i zaawansowana selekcja materiałów..."):
                     try:
                         csv_url = LINK_DO_ARKUSZA.replace('/edit?usp=sharing', '/export?format=csv')
                         df = pd.read_csv(csv_url); l_p = ""
-                        for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Nazwa materiału: {r['Nazwa']} | Kiedy dołączyć (Zastosowanie): {r['Opis dla AI']}\n"
+                        for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Tytuł: {r['Nazwa']} | Kiedy dołączyć (Wskazanie): {r['Opis dla AI']}\n"
                         
                         genai.configure(api_key=api_key)
-                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś precyzyjnym asystentem dla dietetyk Anny Michalskiej. Zachowujesz oryginalne nazewnictwo i strukturę bez wprowadzania własnych nazw nagłówków.")
+                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. Zachowujesz rygorystyczną spójność i strukturę bez samowolnej zmiany nazw nagłówków.")
                         
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
-                            if naglowek == "ZAŁĄCZNIKI I STOPKA":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz pasujące linki edukacyjne tylko wtedy, gdy stan zdrowia pacjenta tego wymaga.\n- Na końcu dodaj tekst:\nW razie jakichkolwiek pytań lub wątpliwości zapraszam do kontaktu mailowego.\n\nPozdrawiam serdecznie,\nAnna Michalska\n"
+                            if naglowek == "Załączniki:":
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyselekcjonowane adresy URL z bazy, jeśli ich warunek kliniczny został spełniony.\n- Pod nimi dodaj dokładnie te zdania końcowe:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             else:
-                                instrukcja_szablonu += f"## {naglowek}\n- Analiza danych z transkrypcji.\n"
+                                prefix = "" if naglowek.startswith("###") else "## "
+                                instrukcja_szablonu += f"{prefix}{naglowek}\n- Uzupełnij precyzyjnymi faktami medycznymi z transkrypcji.\n"
 
-                        p = f"Przeanalizuj transkrypcję wizyty.\n\nZbuduj dokument według ściśle określonej kolejności:\n\nKROK 1: Na samej górze stwórz czystą linię daty: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki (ZAKAZ używania znaków '##' na początku):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBSC: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczne nazewnictwo:\n{instrukcja_szablonu}\n\n🚨 INTELIGENTNA SELEKCJA LINKÓW:\nOto baza linków zewnętrznych:\n{l_p}\n\nDołącz dany link do dokumentu TYLKO wtedy, gdy bezpośrednio dotyczy problemu medycznego opisanego w transkrypcji dla tego pacjenta. Jeśli żaden link nie pasuje, nie dodawaj adresów URL.\n\nTranskrypcja:\n{transcript}"
+                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyśrodkowaną linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBSC: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu:", value=res.text, height=350, key="podglad_gen")
@@ -252,5 +251,7 @@ with tab2:
             t_md = ""
             for sk, ts in st.session_state.sekcje_dokumentu.items():
                 if sk in ["Nagłówek i Metryczka", "Nagłówek i Data wizyty"]: t_md += f"{ts}\n\n"
-                else: t_md += f"## {sk}\n{ts}\n\n"
+                else:
+                    prefix = "" if sk.startswith("###") else "## "
+                    t_md += f"{prefix}{sk}\n{ts}\n\n"
             st.download_button("📥 POBIERZ PROTOKÓŁ (.DOCX)", konwertuj_do_docx(t_md), "Protokol_MeatPoint_Poprawiony.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
