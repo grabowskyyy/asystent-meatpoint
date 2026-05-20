@@ -36,7 +36,7 @@ TEKST_INNE_SMACZKI_STALY = (
     "Wprowadzając do codziennej rutyny jakiekolwiek inne smaczki komercyjne, należy bezwzględnie "
     "pamiętać o kontrolowaniu ich kaloryczności, aby nie zaburzyć bilansu nowej diety pacjenta.\n\n"
     "Szczegółowy poradnik oraz instrukcję, jak samodzielnie wyliczyć kaloryczność dowolnego produktu komercyjnego "
-    "na podstawie danych z etykiety, znajdą Państwo w naszym artykule: "
+    "na podstawie danych z etykiety, znajdawą Państwo w naszym artykule: "
     "https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow"
 )
 
@@ -185,28 +185,29 @@ with tab1:
         if st.button("🎙️ Uruchom inteligentną transkrypcję AI", type="secondary", use_container_width=True):
             if not api_key or not media_file: st.error("❌ Podaj klucz API oraz wgraj plik!")
             else:
-                # NAPRAWA: Zastosowanie asynchronicznego mechanizmu File API dla dużych plików
                 status_placeholder = st.empty()
-                with status_placeholder.container():
-                    st.info("⏳ Krok 1/3: Przesyłanie dużego pliku do bezpiecznej chmury Google AI...")
-                
                 try:
                     genai.configure(api_key=api_key)
                     
-                    # Zapisujemy plik tymczasowo na dysku serwera, by przekazać go do File API
+                    with status_placeholder.container():
+                        st.info("⏳ Krok 1/3: Przesyłanie dużego pliku do bezpiecznej chmury Google AI...")
+                    
                     temp_filename = f"temp_{uuid.uuid4()}_{media_file.name}"
                     with open(temp_filename, "wb") as f:
                         f.write(media_file.getbuffer())
                     
-                    # Wgrywanie pliku do infrastruktury Google
                     uploaded_file_ref = genai.upload_file(path=temp_filename)
                     
-                    with status_placeholder.container():
-                        st.info("⏳ Krok 2/3: Trwa zaawansowane przetwarzanie i analiza audio przez Gemini...")
-                    
-                    # Pętla sprawdzająca stan pliku (czekamy aż status zmieni się na ACTIVE)
+                    # POPRAWKA: Algorytm Wykładniczego Wydłużania Czasu (Exponential Backoff) chroniący przed błędem 503
+                    sleep_time = 5
+                    total_waited = 0
                     while uploaded_file_ref.state.name == "PROCESSING":
-                        time.sleep(4)
+                        with status_placeholder.container():
+                            st.info(f"⏳ Krok 2/3: Trwa zaawansowana analiza audio przez Gemini... (Czekam już {total_waited}s, ponowne sprawdzenie za {sleep_time}s)")
+                        time.sleep(sleep_time)
+                        total_waited += sleep_time
+                        # Stopniowo wydłużamy interwał zapytań do serwera
+                        sleep_time = min(sleep_time * 1.5, 30) 
                         uploaded_file_ref = genai.get_file(uploaded_file_ref.name)
                     
                     if uploaded_file_ref.state.name == "FAILED":
@@ -223,19 +224,32 @@ with tab1:
                         "a kiedy właściciel zwierzęcia (Opiekun). Nie pomijaj żadnych nazw leków, dawek ani wyników badań."
                     )
                     
-                    response_tr = model_transkrybent.generate_content([prompt_tr, uploaded_file_ref])
-                    st.session_state.aktywna_transkrypcja = response_tr.text
+                    # Obsługa potencjalnego przeciążenia modelu przy samym generowaniu tekstu
+                    try:
+                        response_tr = model_transkrybent.generate_content([prompt_tr, uploaded_file_ref])
+                        st.session_state.aktywna_transkrypcja = response_tr.text
+                    except Exception as gemini_err:
+                        if "503" in str(gemini_err) or "high demand" in str(gemini_err).lower():
+                            with status_placeholder.container():
+                                st.warning("⚠️ Serwery Google zgłaszają duże obciążenie. Automatyczna próba ponowienia za 15 sekund...")
+                            time.sleep(15)
+                            response_tr = model_transkrybent.generate_content([prompt_tr, uploaded_file_ref])
+                            st.session_state.aktywna_transkrypcja = response_tr.text
+                        else:
+                            raise gemini_err
                     
-                    # Sprzątanie - usunięcie pliku tymczasowego i pliku z chmury Google
-                    genai.delete_file(uploaded_file_ref.name)
-                    if os.path.exists(temp_filename):
-                        os.remove(temp_filename)
+                    # Czyszczenie śladów
+                    try:
+                        genai.delete_file(uploaded_file_ref.name)
+                    except: pass
+                    if os.path.exists(temp_filename): os.remove(temp_filename)
                         
                     status_placeholder.empty()
                     st.success("✅ Pełna transkrypcja wygenerowana pomyślnie!")
+                    st.rerun()
                 except Exception as e:
                     if os.path.exists(temp_filename): os.remove(temp_filename)
-                    st.error(f"🚨 Błąd asynchronicznej transkrypcji: {e}")
+                    st.error(f"🚨 Status: Nie udało się dokończyć transkrypcji z powodu przeciążenia sieci Google. Spróbuj kliknąć przycisk ponownie za chwilę. Szczegóły: {e}")
         
         transcript = st.text_area("📝 Podgląd / Edycja tekstu transkrypcji:", value=st.session_state.aktywna_transkrypcja, height=380, key="transkrypcja_obszar")
 
