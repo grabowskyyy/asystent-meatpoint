@@ -20,7 +20,7 @@ STRUKTURA_PROTOKOLU = [
     "Badania kontrolne:", "Załączniki:"
 ]
 
-# Poprawiony, sformatowany tekst merytoryczny z właściwymi linkami MeatPoint
+# Stały tekst edukacyjny dotyczący tyndalizacji z poprawnymi linkami
 TEKST_TYNDALIZACJA_STALY = (
     "Jeżeli robią Państwo dietę na dłużej niż 5-6 dni (mowa o diecie surowej) i chcą Państwo "
     "ją bezpiecznie przechowywać w słoiczkach w lodówce (bez zamrażania) LUB przygotowują Państwo "
@@ -31,6 +31,15 @@ TEKST_TYNDALIZACJA_STALY = (
     "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
     "Dodatkowo przygotowaliśmy dla Państwa praktyczny poradnik w formie wideo na platformie YouTube, "
     "gdzie pokazujemy cały proces krok po kroku: https://www.youtube.com/watch?v=tyfT3kmq3ME"
+)
+
+# Nowy stały tekst edukacyjny dotyczący obliczania kaloryczności innych smaczków komercyjnych
+TEKST_INNE_SMACZKI_STALY = (
+    "Wprowadzając do codziennej rutyny jakiekolwiek inne smaczki komercyjne, należy bezwzględnie "
+    "pamiętać o kontrolowaniu ich kaloryczności, aby nie zaburzyć bilansu nowej diety pacjenta.\n\n"
+    "Szczegółowy poradnik oraz instrukcję, jak samodzielnie wyliczyć kaloryczność dowolnego produktu komercyjnego "
+    "na podstawie danych z etykiety, znajdą Państwo w naszym artykule: "
+    "https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow"
 )
 
 def segmentuj_docx(file_bytes):
@@ -90,8 +99,6 @@ def konwertuj_do_docx(tekst_md):
         sec.header.paragraphs[0].paragraph_format.space_after = Pt(0)
         sec.header.paragraphs[0].add_run().add_picture("logo.png", width=Inches(1.0))
 
-    w_metryczce = True
-
     for line in tekst_md.split('\n'):
         l_s = line.strip()
         if not l_s: continue
@@ -107,7 +114,6 @@ def konwertuj_do_docx(tekst_md):
             continue
 
         if l_s.startswith('## '):
-            w_metryczce = False
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
             r = p.add_run(l_s.replace('## ', '')); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
         elif l_s.startswith('### '):
@@ -124,7 +130,7 @@ def konwertuj_do_docx(tekst_md):
                 pk_s, zk_s = l_s.split(':', 1)
                 if len(pk_s) < 45: 
                     p = doc.add_paragraph()
-                    p.add_run(pk_s.strip() + ': ').bold = True
+                    p.add_run(pk_s.strip() + ': ').bold = True # Zunifikowany podział z pojedynczą spacją po dwukropku
                     parsuj_i_formatuj_tekst(p, zk_s)
                     continue
             p = doc.add_paragraph(); parsuj_i_formatuj_tekst(p, l_s)
@@ -165,8 +171,10 @@ with tab1:
                             if naglowek == "Załączniki:":
                                 instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyselekcjonowane adresy URL z bazy, jeśli ich warunek kliniczny został spełniony.\n- Pod nimi dodaj dokładnie te zdania końcowe:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
-                                # Automatyczne wymuszenie poprawnego bloku merytorycznego
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
+                            elif naglowek == "Inne smaczki:":
+                                # Automatyczne wymuszenie stałego bloku wiedzy o innych smaczkach komercyjnych
+                                instrukcja_szablonu += f"## {naglowek}\n{TEKST_INNE_SMACZKI_STALY}\n\n"
                             else:
                                 prefix = "" if naglowek.startswith("###") else "## "
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Uzupełnij precyzyjnymi faktami medycznymi z transkrypcji.\n"
