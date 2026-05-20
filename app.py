@@ -7,7 +7,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
-# --- CZĘŚĆ RESTRYKCYJNIE MEDYCZNA (Generowana jako Nagłówki z tekstem pod spodem) ---
+# --- DOKŁADNA STRUKTURA MEDYCZNA ANNY (Zmapowana 1:1 z plikiem Word) ---
 STRUKTURA_PROTOKOLU = [
     "POWÓD KONSULTACJI", "AKTUALNE SAMOPOCZUCIE", "KAŁ / BIEGUNKA / WYMIOTY", 
     "STATUS MIKCJI (MOCZ)", "ODROBACZANIE", "AKTUALNE BADANIA LABORATORYJNE", 
@@ -24,14 +24,12 @@ STRUKTURA_PROTOKOLU = [
 
 def segmentuj_docx(file_bytes):
     doc = Document(BytesIO(file_bytes))
-    sekcje = {}; biezaca = "Nagłówek i Data wizyty"; sekcje[biezaca] = []
-    # Metryczka górna jako nagłówki wirtualne do Voice Editora
-    pelna_lista_kluczy = ["DANE OPIEKUNA", "DANE PACJENTA"] + STRUKTURA_PROTOKOLU
+    sekcje = {}; biezaca = "Nagłówek i Metryczka"; sekcje[biezaca] = []
     for p in doc.paragraphs:
         t = p.text.strip()
         if not t: continue
         z = False
-        for n in pelna_lista_kluczy:
+        for n in STRUKTURA_PROTOKOLU:
             if n in t.upper() and len(t) < 65: biezaca = n; sekcje[biezaca] = []; z = True; break
         if not z: sekcje[biezaca].append(t)
     return {k: "\n".join(v) for k, v in sekcje.items()}
@@ -80,41 +78,51 @@ def konwertuj_do_docx(tekst_md):
         sec.header.paragraphs[0].paragraph_format.space_after = Pt(0)
         sec.header.paragraphs[0].add_run().add_picture("logo.png", width=Inches(1.0))
 
+    # Blok flagi do kontrolowania czy przeszliśmy już przez górną metryczkę
+    w_metryczce = True
+
     for line in tekst_md.split('\n'):
         l_s = line.strip()
         if not l_s: continue
         l_s = l_s.replace('**', '')
         
-        # Formatowanie wyśrodkowanej daty wizyty wraz z wykrywaniem czerwonego braku informacji
+        # 1. Wyśrodkowana i sformatowana linia Daty Wizyty
         if "DATA WIZYTY:" in l_s.upper():
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(12)
-            
+            p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(16)
             poczatek_daty, *koniec_daty = l_s.split(':', 1)
             p.add_run(poczatek_daty + ': ').bold = True
-            if koniec_daty:
-                parsuj_i_formatuj_tekst(p, koniec_daty[0].strip())
+            if koniec_daty: parsuj_i_formatuj_tekst(p, koniec_daty[0].strip())
+            w_metryczce = False # Wyjście z bloku górnej metryczki
             continue
 
+        # 2. Formatowanie dużych nagłówków medycznych (Pomarańczowe)
         if l_s.startswith('## '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
             r = p.add_run(l_s.replace('## ', '')); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
         elif l_s.startswith('### '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(8), Pt(2)
             r = p.add_run(l_s.replace('### ', '')); r.bold, r.font.size = True, Pt(10.5)
+            
+        # 3. Formatowanie podpunktów z myślnikami
         elif l_s.startswith('- ') or l_s.startswith('* '):
             c_t = l_s.lstrip('-* ').strip(); p = doc.add_paragraph(style='List Bullet'); p.paragraph_format.space_after = Pt(3)
             if ':' in c_t and not c_t.strip().startswith('http'):
                 pk_s, zk_s = c_t.split(':', 1)
                 if len(pk_s) < 45: p.add_run(pk_s.strip() + ':').bold = True; parsuj_i_formatuj_tekst(p, zk_s); continue
             parsuj_i_formatuj_tekst(p, c_t)
+            
+        # 4. Inteligentne formatowanie linii metryczki (Tabulatory pionowe u góry strony)
         else:
             if ':' in l_s and not l_s.strip().startswith('http'):
                 pk_s, zk_s = l_s.split(':', 1)
                 if len(pk_s) < 45: 
                     p = doc.add_paragraph()
-                    p.add_run(pk_s.strip() + ':\t').bold = True # Tabulator wyrównujący
+                    if w_metryczce:
+                        p.add_run(pk_s.strip() + ':\t').bold = True # Kluczowy tabulator wyrównania
+                    else:
+                        p.add_run(pk_s.strip() + ': ').bold = True
                     parsuj_i_formatuj_tekst(p, zk_s)
                     continue
             p = doc.add_paragraph(); parsuj_i_formatuj_tekst(p, l_s)
@@ -129,6 +137,10 @@ with st.sidebar:
     model_choice = st.selectbox("Wybierz model", ["gemini-3.5-flash", "gemini-3.1-pro"])
 
 tab1, tab2 = st.tabs(["🚀 Generator Protokołów", "🎙️ Głosowy Edytor (Voice Editor)"])
+
+SZABLON_TEXT = ""
+if os.path.exists("szablon.txt"):
+    with open("szablon.txt", "r", encoding="utf-8") as f: SZABLON_TEXT = f.read()
 
 with tab1:
     st.title("🐾 MeatPoint.io - Asystent Dietetyczny")
@@ -148,10 +160,10 @@ with tab1:
                         for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Nazwa: {r['Nazwa']} | Kiedy: {r['Opis dla AI']}\n"
                         
                         genai.configure(api_key=api_key)
-                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś doświadczonym asystentem medycznym dla MeatPoint.io. Twoim zadaniem jest wyciągnięcie faktów z transkrypcji i uzupełnienie sekcji pacjenta. Brak danych oznacz jako [BRAK INFORMACJI]. Nie używaj tagów HTML.")
+                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś doświadczonym asystentem medycznym dla MeatPoint.io. Twoim zadaniem jest precyzyjne uzupełnienie metryczki i nagłówków. Brak danych oznacz jako [BRAK INFORMACJI].")
                         
-                        instrukcja_szablonu = "\n".join([f"## {naglowek}\n- Uzupełnij precyzyjnie na podstawie transkrypcji." for naglowek in STRUKTURA_PROTOKOLU])
-                        p = f"Przeanalizuj transkrypcję wizyty.\n\nWyciągnij datę rozmowy i sformatuj linię dokładnie jako: 'Data wizyty: DD.MM.YYYY'\n\nNastępnie wygeneruj podstawowe informacje o pacjencie i opiekunie jako zwykły tekst bez znaków '##' na samym początku dokumentu według wzoru:\nDane Opiekuna: imię i nazwisko opiekuna\nPacjent: imię zwierzaka\nGatunek: kot lub pies\nRasa: rasa zwierzaka\nWiek: wiek zwierzaka\nWaga: waga\nBCS: ocena kondycji\nIlość zwierząt w domu: liczba\nSterylizacja/kastracja: tak lub nie\n\nDopiero pod tymi informacjami umieść poniższą sekcję medyczną:\n{instrukcja_szablonu}\n\nBaza linków edukacyjnych:\n{l_p}\n\nTranskrypcja:\n{transcript}"
+                        instrukcja_szablonu = "\n".join([f"## {naglowek}\n- Uzupełnij na podstawie danych." for naglowek in STRUKTURA_PROTOKOLU])
+                        p = f"Przeanalizuj transkrypcję wizyty.\n\nKROK 1: Na samej górze wygeneruj dokładnie te linie metryczki podstawowej (jeśli brak danych wstaw [BRAK INFORMACJI]):\nDane Opiekuna: imię i nazwisko\nPacjent: imię\nGatunek: gatunek\nRasa: rasa\nWiek: wiek\nWaga: aktualna masa ciała\nBCS: ocena kondycji\nIlość zwierząt w domu: liczba\nSterylizacja/kastracja: status\n\nKROK 2: Bezpośrednio pod metryczką stwórz wyśrodkowaną linię daty: 'Data wizyty: DD.MM.YYYY'\n\nKROK 3: Pod datą umieść sformatowane medyczne nagłówki:\n{instrukcja_szablonu}\n\nZewnętrzne materiały wideo i linki:\n{l_p}\n\nTranskrypcja rozmowy:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu:", value=res.text, height=350, key="podglad_gen")
@@ -246,7 +258,6 @@ with tab2:
         if st.button("📦 Generuj finalny plik Word z poprawkami", type="primary", key="btn_build_final"):
             t_md = ""
             for sk, ts in st.session_state.sekcje_dokumentu.items():
-                if sk == "Nagłówek i Data wizyty": t_md += f"{ts}\n\n"
-                elif sk in ["DANE OPIEKUNA", "DANE PACJENTA"]: t_md += f"{ts}\n\n"
+                if sk in ["Nagłówek i Metryczka", "Nagłówek i Data wizyty"]: t_md += f"{ts}\n\n"
                 else: t_md += f"## {sk}\n{ts}\n\n"
             st.download_button("📥 POBIERZ PROTOKÓŁ (.DOCX)", konwertuj_do_docx(t_md), "Protokol_MeatPoint_Poprawiony.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
