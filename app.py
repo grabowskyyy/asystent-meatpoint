@@ -7,15 +7,29 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
+# --- DOKŁADNA STRUKTURA DIETETYCZNA ANNY (Zmapowana 1:1 z plikiem Word) ---
+STRUKTURA_PROTOKOLU = [
+    "DANE OPIEKUNA", "DANE PACJENTA", "POWÓD KONSULTACJI", "AKTUALNE SAMOPOCZUCIE",
+    "KAŁ / BIEGUNKA / WYMIOTY", "STATUS MIKCJI (MOCZ)", "ODROBACZANIE",
+    "AKTUALNE BADANIA LABORATORYJNE", "AKTUALNE LEKI I SUPLEMENTY MEDYCZNE",
+    "KOMENTARZ KLINICZNY DO WYWIADU", "GŁÓWNE ZAŁOŻENIA NOWEJ DIETY",
+    "CO SIĘ ZMIENI NA DIECIE BARF/BACF (EDUKACJA)", "DOTYCHCZASOWE ŻYWIENIE I HISTORIA SMAKOWA",
+    "KATEGORYCZNIE TAK (ULUBIONE SKŁADNIKI)", "KATEGORYCZNIE NIE (ODRZUCONE SKŁADNIKI)",
+    "PRZECHOWYWANIE I LOGISTYKA PODAWANIA", "PLAN DIETETYCZNY (MODEL I KALORYCZNOŚĆ)",
+    "GOSPODARKA WODNA (PICIU)", "SUPLEMENTY DODATKOWE (CELOWANE)",
+    "WIĄZANIE FOSFORU I GOSPODARKA ŻELAZEM", "BEZPIECZNE SMACZKI FUNKCJONALNE",
+    "AWARYJNE KARMY KOMERCYJNE", "ZASADA STOPNIOWEGO WDRAŻANIA (TRANZYCJI)",
+    "HARMONOGRAM BADAŃ KONTROLNYCH", "ZAŁĄCZNIKI I STOPKA"
+]
+
 def segmentuj_docx(file_bytes):
     doc = Document(BytesIO(file_bytes))
     sekcje = {}; biezaca = "Nagłówek i Data wizyty"; sekcje[biezaca] = []
-    znane_naglowki = ["DANE FORMALNE OPIEKUNA", "DANE PACJENTA", "WYWIAD KLINICZNY", "WYPRÓŻNIENIA I OBJAWY GASTRYCZNE", "AKTUALNE BADANIA LABORATORYJNE", "AKTUALNE LEKI I SUPLEMENTY MEDYCZNE", "KOMENTARZ DO WYWIADU I GŁÓWNE ZAŁOŻENIA DIETY", "EDUKACJA OPIEKUNA", "HISTORIA ŻYWIENIOWA I PREFERENCJE SMAKOWE", "SPECYFIKACJA NOWEGO PLANU DIETETYCEDNEGO", "GOSPODARKA WODNA (PICIU)", "SUPLEMENTACJA DODATKOWA (CELOWANA)", "WIĄZANIE FOSFORU I GOSPODARKA ŻELAZEM", "AWARYJNE KARMY KOMERCYJNE", "HARMONOGRAM TRANZYCJI", "HARMONOGRAM BADAŃ KONTROLNYCH", "ZAŁOŻONE ZAŁĄCZNIKI"]
     for p in doc.paragraphs:
         t = p.text.strip()
         if not t: continue
         z = False
-        for n in znane_naglowki:
+        for n in STRUKTURA_PROTOKOLU:
             if n in t.upper() and len(t) < 65: biezaca = n; sekcje[biezaca] = []; z = True; break
         if not z: sekcje[biezaca].append(t)
     return {k: "\n".join(v) for k, v in sekcje.items()}
@@ -96,13 +110,9 @@ with st.sidebar:
 
 tab1, tab2 = st.tabs(["🚀 Generator Protokołów", "🎙️ Głosowy Edytor (Voice Editor)"])
 
-SZABLON_TEXT = ""
-if os.path.exists("szablon.txt"):
-    with open("szablon.txt", "r", encoding="utf-8") as f: SZABLON_TEXT = f.read()
-
 with tab1:
     st.title("🐾 MeatPoint.io - Asystent Dietetyczny")
-    col1, col2 = st.columns([1, 1])
+    col1, col2 = st.columns([1, 1], gap="large")
     transcript = col1.text_area("🔊 Wklej tutaj tekst transkrypcji z Google Meet:", height=550, key="transkrypcja_gen")
     
     with col2:
@@ -111,22 +121,23 @@ with tab1:
         if st.button("🚀 Generuj i wypełnij szablon", type="primary", key="btn_gen"):
             if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz transkrypcję!")
             else:
-                with st.spinner("Generowanie..."):
+                with st.spinner("Analiza kliniczna i dobór linków..."):
                     try:
                         csv_url = LINK_DO_ARKUSZA.replace('/edit?usp=sharing', '/export?format=csv')
                         df = pd.read_csv(csv_url); l_p = ""
                         for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Nazwa: {r['Nazwa']} | Kiedy: {r['Opis dla AI']}\n"
+                        
                         genai.configure(api_key=api_key)
-                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś asystentem medycznym MeatPoint.io. Pisz TYLKO fakty. Brak informacji oznacz jako [BRAK INFORMACJI]. Bez tagów HTML.")
-                        p = f"Uzupełnij szablon.\nBaza linków:\n{l_p}\n\nSzablon:\n{SZABLON_TEXT}\n\nTranskrypcja:\n{transcript}"
+                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś asystentem medycznym dla MeatPoint.io. Twoim zadaniem jest wypełnienie nagłówków faktami z transkrypcji. Brak danych oznacz jako [BRAK INFORMACJI]. Pisz czysty tekst bez HTML/CSS.")
+                        
+                        instrukcja_szablonu = "\n".join([f"## {naglowek}\n- Uzupełnij na podstawie transkrypcji." for naglowek in STRUKTURA_PROTOKOLU])
+                        p = f"Przeanalizuj transkrypcję i uzupełnij strukturę medyczną pacjenta.\n\nBaza linków edukacyjnych:\n{l_p}\n\nSTRUKTURA DO WYPEŁNIENIA:\nData wizyty:\n{instrukcja_szablonu}\n\nTranskrypcja rozmowy:\n{transcript}"
+                        
                         res = m.generate_content(p)
-                        st.text_area("Podgląd:", value=res.text, height=350, key="podglad_gen")
+                        st.text_area("Podgląd tekstu:", value=res.text, height=350, key="podglad_gen")
                         st.download_button("📥 POBIERZ PLIK WORD (.DOCX)", konwertuj_do_docx(res.text), "Protokol_MeatPoint.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
                     except Exception as e: st.error(f"🚨 Błąd: {e}")
 
-# ==============================================================================
-# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (Trwałość Stanu Pamięci)
-# ==============================================================================
 with tab2:
     st.title("🎙️ Inteligentny Edytor Głosowy Protokółów")
     
@@ -194,19 +205,18 @@ with tab2:
                 if st.button("🚀 WPROWADŹ WSZYSTKIE POPRAWKI GŁOSOWE (HURTOWO)", type="primary", use_container_width=True):
                     if not api_key: st.error("❌ Podaj klucz API Gemini!")
                     else:
-                        with st.spinner("Gemini przetwarza kolejno Twoje uwagi głosowe..."):
+                        with st.spinner("Gemini edytuje wybrane fragmenty..."):
                             try:
                                 genai.configure(api_key=api_key)
                                 model_edytor = genai.GenerativeModel(model_name=model_choice)
                                 
                                 for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items()):
-                                    p_ed = f"Zmodyfikuj oryginalny tekst sekcji '{s_nazwa}' na podstawie instrukcji głosowych.\nTekst:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\nZWROT WYŁĄCZNIE zaktualizowany, czysty tekst medyczny bez żadnych komentarzy, wyjaśnień ani wstępów."
+                                    p_ed = f"Zmodyfikuj oryginalny tekst sekcji '{s_nazwa}' na podstawie instrukcji głosowych.\nTekst:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\nZWROT WYŁĄCZNIE zaktualizowany tekst medyczny bez żadnych komentarzy ani wstępów."
                                     a_part = {"data": a_bytes, "mime_type": "audio/wav"}
                                     response_edycja = model_edytor.generate_content([p_ed, a_part])
                                     st.session_state.sekcje_dokumentu[s_nazwa] = response_edycja.text.strip()
                                     st.session_state.klucze_mikrofonow[s_nazwa] = str(uuid.uuid4())
                                 
-                                # POPRAWKA: Usunąłem czyszczenie słownika koszyk_nagran, by zachować listę w pamięci po operacji
                                 st.success("🎉 Wszystkie sekcje zostały pomyślnie zaktualizowane!")
                                 st.rerun()
                             except Exception as e: st.error(f"🚨 Błąd edytora: {e}")
