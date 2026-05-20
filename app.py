@@ -125,7 +125,7 @@ with tab1:
                     except Exception as e: st.error(f"🚨 Błąd: {e}")
 
 # ==============================================================================
-# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (Pełna Stabilizacja Widżetów)
+# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (Trwałość Stanu Pamięci)
 # ==============================================================================
 with tab2:
     st.title("🎙️ Inteligentny Edytor Głosowy Protokółów")
@@ -133,7 +133,6 @@ with tab2:
     if 'sekcje_dokumentu' not in st.session_state: st.session_state.sekcje_dokumentu = None
     if 'koszyk_nagran' not in st.session_state: st.session_state.koszyk_nagran = {}
     if 'v_key' not in st.session_state: st.session_state.v_key = str(uuid.uuid4())
-    # Inicjalizacja słownika unikalnych podkluczy dla mikrofonów każdej sekcji osobno
     if 'klucze_mikrofonow' not in st.session_state: st.session_state.klucze_mikrofonow = {}
 
     col_top1, col_top2 = st.columns([3, 1])
@@ -161,7 +160,6 @@ with tab2:
             wybrana_sekcja = st.selectbox("Wybierz nagłówek, do którego chcesz dodać nagranie:", list(st.session_state.sekcje_dokumentu.keys()), key="sel_voice")
             st.text_area("📄 Aktualna treść sekcji:", value=st.session_state.sekcje_dokumentu[wybrana_sekcja], height=220, disabled=True, key=f"t_{wybrana_sekcja}")
             
-            # Dynamiczne przypisywanie unikalnego klucza dla danej sekcji, jeśli jeszcze nie istnieje
             if wybrana_sekcja not in st.session_state.klucze_mikrofonow:
                 st.session_state.klucze_mikrofonow[wybrana_sekcja] = str(uuid.uuid4())
             
@@ -185,11 +183,9 @@ with tab2:
                         c_box1.markdown(f"**📌 {s_nazwa}**")
                         c_box1.audio(a_bytes, format="audio/wav")
                         
-                        # ROZWIĄZANIE PROBLEMU: Usunięcie nagrania + natychmiastowa wymiana klucza mikrofonu na nowy UUID
                         if c_box2.button("❌", key=f"del_{s_nazwa}", help="Usuń to nagranie"):
                             if s_nazwa in st.session_state.koszyk_nagran:
                                 del st.session_state.koszyk_nagran[s_nazwa]
-                            # Wymiana klucza zmusza Streamlit do zresetowania bufora mikrofonu dla tej sekcji
                             st.session_state.klucze_mikrofonow[s_nazwa] = str(uuid.uuid4())
                             st.toast(f"🗑️ Usunięto nagranie z sekcji: {s_nazwa}")
                             st.rerun()
@@ -208,10 +204,9 @@ with tab2:
                                     a_part = {"data": a_bytes, "mime_type": "audio/wav"}
                                     response_edycja = model_edytor.generate_content([p_ed, a_part])
                                     st.session_state.sekcje_dokumentu[s_nazwa] = response_edycja.text.strip()
-                                    # Automatycznie czyścimy mikrofon po przetworzeniu, by nie został stary głos
                                     st.session_state.klucze_mikrofonow[s_nazwa] = str(uuid.uuid4())
                                 
-                                st.session_state.koszyk_nagran = {} 
+                                # POPRAWKA: Usunąłem czyszczenie słownika koszyk_nagran, by zachować listę w pamięci po operacji
                                 st.success("🎉 Wszystkie sekcje zostały pomyślnie zaktualizowane!")
                                 st.rerun()
                             except Exception as e: st.error(f"🚨 Błąd edytora: {e}")
