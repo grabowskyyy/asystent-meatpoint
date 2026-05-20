@@ -96,7 +96,6 @@ with st.sidebar:
 
 tab1, tab2 = st.tabs(["🚀 Generator Protokołów", "🎙️ Głosowy Edytor (Voice Editor)"])
 
-# --- Wczytywanie szablonu tekstowego ---
 SZABLON_TEXT = ""
 if os.path.exists("szablon.txt"):
     with open("szablon.txt", "r", encoding="utf-8") as f: SZABLON_TEXT = f.read()
@@ -126,7 +125,7 @@ with tab1:
                     except Exception as e: st.error(f"🚨 Błąd: {e}")
 
 # ==============================================================================
-# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (Wielosekcyjny)
+# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (Naprawiona Logika)
 # ==============================================================================
 with tab2:
     st.title("🎙️ Inteligentny Edytor Głosowy Protokółów")
@@ -159,7 +158,6 @@ with tab2:
             wybrana_sekcja = st.selectbox("Wybierz nagłówek, do którego chcesz dodać nagranie:", list(st.session_state.sekcje_dokumentu.keys()), key="sel_voice")
             st.text_area("📄 Aktualna treść sekcji:", value=st.session_state.sekcje_dokumentu[wybrana_sekcja], height=220, disabled=True, key=f"t_{wybrana_sekcja}")
             
-            # Rejestracja i pamięć nagrania dla danej sekcji
             audio_instrukcja = mic_recorder(start_prompt="🎙️ Nagraj uwagę dla tej sekcji", stop_prompt="🛑 Zatrzymaj i zapisz w pamięci", key=f"rec_{wybrana_sekcja}_{st.session_state.v_key}")
             if audio_instrukcja:
                 st.session_state.koszyk_nagran[wybrana_sekcja] = audio_instrukcja['bytes']
@@ -170,18 +168,20 @@ with tab2:
             if not st.session_state.koszyk_nagran:
                 st.info("Brak oczekujących nagrań. Wybierz sekcję po lewej stronie i nagraj głos.")
             else:
-                # Dynamiczne generowanie listy nagrań z przyciskiem kasowania X
-                for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items()):
-                    c_box1, c_box2 = st.columns([5, 1])
-                    c_box1.markdown(f"**📌 {s_nazwa}**")
-                    c_box1.audio(a_bytes, format="audio/wav")
-                    # Przycisk X do usuwania błędnego nagrania
-                    if c_box2.button("❌", key=f"del_{s_nazwa}_{st.session_state.v_key}", help="Usuń to nagranie"):
-                        del st.session_state.koszyk_nagran[s_nazwa]
-                        st.rerun()
+                # POPRAWKA: Pętla na kopię kluczy zapobiega błędom mutacji słownika w locie
+                for s_nazwa in list(st.session_state.koszyk_nagran.keys()):
+                    if s_nazwa in st.session_state.koszyk_nagran:
+                        a_bytes = st.session_state.koszyk_nagran[s_nazwa]
+                        c_box1, c_box2 = st.columns([5, 1])
+                        c_box1.markdown(f"**📌 {s_nazwa}**")
+                        c_box1.audio(a_bytes, format="audio/wav")
+                        
+                        # POPRAWKA: Przycisk X używa uproszczonego klucza opartego o stały ciąg znaków
+                        if c_box2.button("❌", key=f"del_{s_nazwa}"):
+                            del st.session_state.koszyk_nagran[s_nazwa]
+                            st.rerun()
                 
                 st.markdown("---")
-                # Hurtowe przetwarzanie nagrań przez Gemini
                 if st.button("🚀 WPROWADŹ WSZYSTKIE POPRAWKI GŁOSOWE (HURTOWO)", type="primary", use_container_width=True):
                     if not api_key: st.error("❌ Podaj klucz API Gemini!")
                     else:
@@ -191,22 +191,22 @@ with tab2:
                                 model_edytor = genai.GenerativeModel(model_name=model_choice)
                                 
                                 for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items()):
-                                    p_ed = f"Zmodyfikuj oryginalny tekst sekcji '{s_nazwa}' na podstawie instrukcji głosowych.\nTekst:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\nZWROT WYŁĄCZNIE poprawioną treść, bez komentarzy."
+                                    p_ed = f"Zmodyfikuj oryginalny tekst sekcji '{s_nazwa}' na podstawie instrukcji głosowych.\nTekst:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\nZWROT WYŁĄCZNIE zaktualizowany, czysty tekst medyczny bez żadnych komentarzy, wyjaśnień ani wstępów."
                                     a_part = {"data": a_bytes, "mime_type": "audio/wav"}
                                     response_edycja = model_edytor.generate_content([p_ed, a_part])
                                     st.session_state.sekcje_dokumentu[s_nazwa] = response_edycja.text.strip()
                                 
-                                st.session_state.koszyk_nagran = {} # Czyszczenie koszyka po udanej operacji
-                                st.success("🎉 Wszystkie sekcje zostały zaktualizowane!")
+                                st.session_state.koszyk_nagran = {} 
+                                st.success("🎉 Wszystkie sekcje zostały pomyślnie zaktualizowane!")
                                 st.rerun()
                             except Exception as e: st.error(f"🚨 Błąd edytora: {e}")
 
-        # Finalny zapis skompilowanego dokumentu
-        if st.session_state.sekcje_dokumentu and not st.session_state.koszyk_nagran:
-            st.markdown("---")
-            st.markdown("### 3️⃣ Pobieranie gotowego dokumentu")
-            if st.button("📦 Generuj zaktualizowany plik Word", type="primary", key="btn_build_final"):
-                t_md = ""
-                for sk, ts in st.session_state.sekcje_dokumentu.items():
-                    t_md += f"{ts}\n\n" if sk == "Nagłówek i Data wizyty" else f"## {sk}\n{ts}\n\n"
-                st.download_button("📥 POBIERZ PROTOKÓŁ Z POPRAWKAMI (.DOCX)", konwertuj_do_docx(t_md), "Protokol_Poprawiony.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        # POPRAWKA: Przycisk pobierania jest teraz renderowany niezależnie od stanu koszyka
+        st.markdown("---")
+        st.markdown("### 3️⃣ Pobieranie gotowego dokumentu")
+        if st.button("📦 Generuj finalny plik Word z poprawkami", type="primary", key="btn_build_final"):
+            t_md = ""
+            for sk, ts in st.session_state.sekcje_dokumentu.items():
+                if sk == "Nagłówek i Data wizyty": t_md += f"{ts}\n\n"
+                else: t_md += f"## {sk}\n{ts}\n\n"
+            st.download_button("📥 POBIERZ PROTOKÓŁ (.DOCX)", konwertuj_do_docx(t_md), "Protokol_MeatPoint_Poprawiony.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
