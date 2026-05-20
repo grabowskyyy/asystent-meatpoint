@@ -7,29 +7,31 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
-# --- DOKŁADNA STRUKTURA DIETETYCZNA ANNY (Zmapowana 1:1 z plikiem Word) ---
+# --- CZĘŚĆ RESTRYKCYJNIE MEDYCZNA (Generowana jako Nagłówki z tekstem pod spodem) ---
 STRUKTURA_PROTOKOLU = [
-    "DANE OPIEKUNA", "DANE PACJENTA", "POWÓD KONSULTACJI", "AKTUALNE SAMOPOCZUCIE",
-    "KAŁ / BIEGUNKA / WYMIOTY", "STATUS MIKCJI (MOCZ)", "ODROBACZANIE",
-    "AKTUALNE BADANIA LABORATORYJNE", "AKTUALNE LEKI I SUPLEMENTY MEDYCZNE",
-    "KOMENTARZ KLINICZNY DO WYWIADU", "GŁÓWNE ZAŁOŻENIA NOWEJ DIETY",
-    "CO SIĘ ZMIENI NA DIECIE BARF/BACF (EDUKACJA)", "DOTYCHCZASOWE ŻYWIENIE I HISTORIA SMAKOWA",
-    "KATEGORYCZNIE TAK (ULUBIONE SKŁADNIKI)", "KATEGORYCZNIE NIE (ODRZUCONE SKŁADNIKI)",
-    "PRZECHOWYWANIE I LOGISTYKA PODAWANIA", "PLAN DIETETYCZNY (MODEL I KALORYCZNOŚĆ)",
-    "GOSPODARKA WODNA (PICIU)", "SUPLEMENTY DODATKOWE (CELOWANE)",
-    "WIĄZANIE FOSFORU I GOSPODARKA ŻELAZEM", "BEZPIECZNE SMACZKI FUNKCJONALNE",
-    "AWARYJNE KARMY KOMERCYJNE", "ZASADA STOPNIOWEGO WDRAŻANIA (TRANZYCJI)",
-    "HARMONOGRAM BADAŃ KONTROLNYCH", "ZAŁĄCZNIKI I STOPKA"
+    "POWÓD KONSULTACJI", "AKTUALNE SAMOPOCZUCIE", "KAŁ / BIEGUNKA / WYMIOTY", 
+    "STATUS MIKCJI (MOCZ)", "ODROBACZANIE", "AKTUALNE BADANIA LABORATORYJNE", 
+    "AKTUALNE LEKI I SUPLEMENTY MEDYCZNE", "KOMENTARZ KLINICZNY DO WYWIADU", 
+    "GŁÓWNE ZAŁOŻENIA NOWEJ DIETY", "CO SIĘ ZMIENI NA DIECIE BARF/BACF (EDUKACJA)", 
+    "DOTYCHCZASOWE ŻYWIENIE I HISTORIA SMAKOWA", "KATEGORYCZNIE TAK (ULUBIONE SKŁADNIKI)", 
+    "KATEGORYCZNIE NIE (ODRZUCONE SKŁADNIKI)", "PRZECHOWYWANIE I LOGISTYKA PODAWANIA", 
+    "PLAN DIETETYCZNY (MODEL I KALORYCZNOŚĆ)", "GOSPODARKA WODNA (PICIU)", 
+    "SUPLEMENTY DODATKOWE (CELOWANE)", "WIĄZANIE FOSFORU I GOSPODARKA ŻELAZEM", 
+    "BEZPIECZNE SMACZKI FUNKCJONALNE", "AWARYJNE KARMY KOMERCYJNE", 
+    "ZASADA STOPNIOWEGO WDRAŻANIA (TRANZYCJI)", "HARMONOGRAM BADAŃ KONTROLNYCH", 
+    "ZAŁĄCZNIKI I STOPKA"
 ]
 
 def segmentuj_docx(file_bytes):
     doc = Document(BytesIO(file_bytes))
     sekcje = {}; biezaca = "Nagłówek i Data wizyty"; sekcje[biezaca] = []
+    # Metryczka górna jako nagłówki wirtualne do Voice Editora
+    pelna_lista_kluczy = ["DANE OPIEKUNA", "DANE PACJENTA"] + STRUKTURA_PROTOKOLU
     for p in doc.paragraphs:
         t = p.text.strip()
         if not t: continue
         z = False
-        for n in STRUKTURA_PROTOKOLU:
+        for n in pelna_lista_kluczy:
             if n in t.upper() and len(t) < 65: biezaca = n; sekcje[biezaca] = []; z = True; break
         if not z: sekcje[biezaca].append(t)
     return {k: "\n".join(v) for k, v in sekcje.items()}
@@ -83,14 +85,16 @@ def konwertuj_do_docx(tekst_md):
         if not l_s: continue
         l_s = l_s.replace('**', '')
         
-        # Wizualna stylizacja Daty Wizyty na środku ekranu
+        # Formatowanie wyśrodkowanej daty wizyty wraz z wykrywaniem czerwonego braku informacji
         if "DATA WIZYTY:" in l_s.upper():
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(12)
-            r = p.add_run(l_s)
-            r.bold = True
-            r.font.size = Pt(11)
+            
+            poczatek_daty, *koniec_daty = l_s.split(':', 1)
+            p.add_run(poczatek_daty + ': ').bold = True
+            if koniec_daty:
+                parsuj_i_formatuj_tekst(p, koniec_daty[0].strip())
             continue
 
         if l_s.startswith('## '):
@@ -110,7 +114,7 @@ def konwertuj_do_docx(tekst_md):
                 pk_s, zk_s = l_s.split(':', 1)
                 if len(pk_s) < 45: 
                     p = doc.add_paragraph()
-                    p.add_run(pk_s.strip() + ':\t').bold = True # Dodany tabulator dla wyrównania metryczki pacjenta
+                    p.add_run(pk_s.strip() + ':\t').bold = True # Tabulator wyrównujący
                     parsuj_i_formatuj_tekst(p, zk_s)
                     continue
             p = doc.add_paragraph(); parsuj_i_formatuj_tekst(p, l_s)
@@ -146,8 +150,8 @@ with tab1:
                         genai.configure(api_key=api_key)
                         m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś doświadczonym asystentem medycznym dla MeatPoint.io. Twoim zadaniem jest wyciągnięcie faktów z transkrypcji i uzupełnienie sekcji pacjenta. Brak danych oznacz jako [BRAK INFORMACJI]. Nie używaj tagów HTML.")
                         
-                        instrukcja_szablonu = "\n".join([f"## {naglowek}\n- Uzupełnij precyzyjnie." for naglowek in STRUKTURA_PROTOKOLU])
-                        p = f"Przeanalizuj transkrypcję wizyty.\n\nWyciągnij datę rozmowy i sformatuj linię dokładnie jako: 'Data wizyty: DD.MM.YYYY'\n\nBaza linków edukacyjnych:\n{l_p}\n\nSTRUKTURA DO WYPEŁNIENIA:\n{instrukcja_szablonu}\n\nTranskrypcja:\n{transcript}"
+                        instrukcja_szablonu = "\n".join([f"## {naglowek}\n- Uzupełnij precyzyjnie na podstawie transkrypcji." for naglowek in STRUKTURA_PROTOKOLU])
+                        p = f"Przeanalizuj transkrypcję wizyty.\n\nWyciągnij datę rozmowy i sformatuj linię dokładnie jako: 'Data wizyty: DD.MM.YYYY'\n\nNastępnie wygeneruj podstawowe informacje o pacjencie i opiekunie jako zwykły tekst bez znaków '##' na samym początku dokumentu według wzoru:\nDane Opiekuna: imię i nazwisko opiekuna\nPacjent: imię zwierzaka\nGatunek: kot lub pies\nRasa: rasa zwierzaka\nWiek: wiek zwierzaka\nWaga: waga\nBCS: ocena kondycji\nIlość zwierząt w domu: liczba\nSterylizacja/kastracja: tak lub nie\n\nDopiero pod tymi informacjami umieść poniższą sekcję medyczną:\n{instrukcja_szablonu}\n\nBaza linków edukacyjnych:\n{l_p}\n\nTranskrypcja:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu:", value=res.text, height=350, key="podglad_gen")
@@ -243,5 +247,6 @@ with tab2:
             t_md = ""
             for sk, ts in st.session_state.sekcje_dokumentu.items():
                 if sk == "Nagłówek i Data wizyty": t_md += f"{ts}\n\n"
+                elif sk in ["DANE OPIEKUNA", "DANE PACJENTA"]: t_md += f"{ts}\n\n"
                 else: t_md += f"## {sk}\n{ts}\n\n"
             st.download_button("📥 POBIERZ PROTOKÓŁ (.DOCX)", konwertuj_do_docx(t_md), "Protokol_MeatPoint_Poprawiony.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
