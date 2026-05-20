@@ -20,17 +20,17 @@ STRUKTURA_PROTOKOLU = [
     "Badania kontrolne:", "Załączniki:"
 ]
 
-# Stały tekst edukacyjny dotyczący tyndalizacji zgodnie z wytycznymi z obrazka
+# Poprawiony, sformatowany tekst merytoryczny z właściwymi linkami MeatPoint
 TEKST_TYNDALIZACJA_STALY = (
     "Jeżeli robią Państwo dietę na dłużej niż 5-6 dni (mowa o diecie surowej) i chcą Państwo "
     "ją bezpiecznie przechowywać w słoiczkach w lodówce (bez zamrażania) LUB przygotowują Państwo "
     "dietę gotowaną (BACF) na zapas, konieczne jest przeprowadzenie procesu tyndalizacji (potrójnej pasteryzacji).\n\n"
-    "Proces ten eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
-    "które mogą namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
+    "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
+    "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
     "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
-    "znajdą Państwo w naszym dedykowanym poradniku na blogu: https://meatpoint.io/tyndalizacja-pasteryzacja-diety-barf/\n"
+    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
     "Dodatkowo przygotowaliśmy dla Państwa praktyczny poradnik w formie wideo na platformie YouTube, "
-    "gdzie pokazujemy cały proces wizualnie: https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    "gdzie pokazujemy cały proces krok po kroku: https://www.youtube.com/watch?v=tyfT3kmq3ME"
 )
 
 def segmentuj_docx(file_bytes):
@@ -90,6 +90,8 @@ def konwertuj_do_docx(tekst_md):
         sec.header.paragraphs[0].paragraph_format.space_after = Pt(0)
         sec.header.paragraphs[0].add_run().add_picture("logo.png", width=Inches(1.0))
 
+    w_metryczce = True
+
     for line in tekst_md.split('\n'):
         l_s = line.strip()
         if not l_s: continue
@@ -105,6 +107,7 @@ def konwertuj_do_docx(tekst_md):
             continue
 
         if l_s.startswith('## '):
+            w_metryczce = False
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
             r = p.add_run(l_s.replace('## ', '')); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
         elif l_s.startswith('### '):
@@ -160,9 +163,9 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyselekcjonowane adresy URL z bazy, jeśli ich warunek kliniczny został spełniony.\n- Pod nimi dodaj dokładnie te zdania końcowe:\nW razie pytań dotyczących tego opisu, jestem do Państwa dispozcji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyselekcjonowane adresy URL z bazy, jeśli ich warunek kliniczny został spełniony.\n- Pod nimi dodaj dokładnie te zdania końcowe:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
-                                # Automatyczne wymuszenie stałego bloku tekstu edukacyjnego z hiperłączami
+                                # Automatyczne wymuszenie poprawnego bloku merytorycznego
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             else:
                                 prefix = "" if naglowek.startswith("###") else "## "
