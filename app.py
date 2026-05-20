@@ -77,8 +77,6 @@ def konwertuj_do_docx(tekst_md):
         sec.header.paragraphs[0].paragraph_format.space_after = Pt(0)
         sec.header.paragraphs[0].add_run().add_picture("logo.png", width=Inches(1.0))
 
-    w_metryczce = True
-
     for line in tekst_md.split('\n'):
         l_s = line.strip()
         if not l_s: continue
@@ -94,25 +92,23 @@ def konwertuj_do_docx(tekst_md):
             continue
 
         if l_s.startswith('## '):
-            w_metryczce = False
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
             r = p.add_run(l_s.replace('## ', '')); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
         elif l_s.startswith('### '):
-            w_metryczce = False
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(8), Pt(2)
             r = p.add_run(l_s.replace('### ', '')); r.bold, r.font.size = True, Pt(10.5)
         elif l_s.startswith('- ') or l_s.startswith('* '):
             c_t = l_s.lstrip('-* ').strip(); p = doc.add_paragraph(style='List Bullet'); p.paragraph_format.space_after = Pt(3)
             if ':' in c_t and not c_t.strip().startswith('http'):
                 pk_s, zk_s = c_t.split(':', 1)
-                if len(pk_s) < 45: p.add_run(pk_s.strip() + ':').bold = True; parsuj_i_formatuj_tekst(p, zk_s); continue
+                if len(pk_s) < 45: p.add_run(pk_s.strip() + ': ').bold = True; parsuj_i_formatuj_tekst(p, zk_s); continue
             parsuj_i_formatuj_tekst(p, c_t)
         else:
             if ':' in l_s and not l_s.strip().startswith('http'):
                 pk_s, zk_s = l_s.split(':', 1)
                 if len(pk_s) < 45: 
                     p = doc.add_paragraph()
-                    p.add_run(pk_s.strip() + (':\t' if w_metryczce else ': ')).bold = True
+                    p.add_run(pk_s.strip() + ': ').bold = True
                     parsuj_i_formatuj_tekst(p, zk_s)
                     continue
             p = doc.add_paragraph(); parsuj_i_formatuj_tekst(p, l_s)
@@ -156,7 +152,7 @@ with tab1:
                                 prefix = "" if naglowek.startswith("###") else "## "
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Uzupełnij precyzyjnymi faktami medycznymi z transkrypcji.\n"
 
-                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBSC: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
+                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu:", value=res.text, height=350, key="podglad_gen")
