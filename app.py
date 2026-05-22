@@ -41,27 +41,20 @@ TEKST_INNE_SMACZKI_STALY = (
 )
 
 TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
-    "Proszę zacząć od:\n"
-    "• Wody\n• Mięsa\n• Podrobów\n• tłuszczu\n• Tauryny\n"
+    "Proszę zacząć od:\n• Wody\n• Mięsa\n• Podrobów\n• tłuszczu\n• Tauryny\n"
     "Proszę przygotować dietę tylko z ich zawartością i na razie pominąć pozostałe suplementy.\n\n"
     "Jak Kicia będzie się dobrze czuła, na następny tydzień proszę przygotować dietę z zawartością:\n"
-    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n"
-    "• Dodatkowo: \n\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n"
-    "• Dodatkowo: \n\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n"
-    "• Dodatkowo: \n\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n"
-    "• Dodatkowo: \n\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
-    "• Dodatkowo: \n\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
-    "• Dodatkowo: \n\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n• Dodatkowo: \n\n"
     "To będzie już kompletna dieta."
 )
 
@@ -122,14 +115,15 @@ def konwertuj_do_docx(tekst_md):
         sec.header.paragraphs[0].paragraph_format.space_after = Pt(0)
         sec.header.paragraphs[0].add_run().add_picture("logo.png", width=Inches(1.0))
 
+    w_metryczce = True
+
     for line in tekst_md.split('\n'):
         l_s = line.strip()
         if not l_s: continue
         l_s = l_s.replace('**', '')
         
         if "DATA WIZYTY:" in l_s.upper():
-            p = doc.add_paragraph()
-            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(6)
             poczatek_daty, *koniec_daty = l_s.split(':', 1)
             p.add_run(poczatek_daty + ': ').bold = True
@@ -171,104 +165,112 @@ with st.sidebar:
 tab1, tab2 = st.tabs(["🚀 Partie Transkrypcji i Generator", "🎙️ Głosowy Edytor (Voice Editor)"])
 
 # ==============================================================================
-# 🚀 ZAKŁADKA 1: ETAPOWY HUB MULTIMEDIALNY (CHUNKED TRANSCRIPTION)
+# 🚀 ZAKŁADKA 1: INTELIGENTNY HUB KROKOWY Z DETEKCJĄ KOŃCA PLIKU
 # ==============================================================================
 with tab1:
     st.title("🐾 Multimedialny Hub MeatPoint.io (Wersja Krokowa)")
-    st.markdown("Wgraj plik wideo/audio. Aplikacja pozwala na generowanie transkrypcji partiami po 15 minut, całkowicie omijając limity sieciowe chmury Google.")
+    st.markdown("Wgraj plik wideo/audio. Aplikacja automatycznie wykryje długość i pozwoli wygenerować transkrypcję partiami.")
     
     col1, col2 = st.columns([1, 1], gap="large")
     
-    # Inicjalizacja stanów krokowych w pamięci Streamlit
     if 'zakres_minut' not in st.session_state: st.session_state.zakres_minut = 0
     if 'skumulowana_transkrypcja' not in st.session_state: st.session_state.skumulowana_transkrypcja = ""
     if 'aktywny_file_id' not in st.session_state: st.session_state.aktywny_file_id = None
     if 'poprzedni_plik_nazwa' not in st.session_state: st.session_state.poprzedni_plik_nazwa = ""
+    if 'calkowita_dlugosc_sekundy' not in st.session_state: st.session_state.calkowita_dlugosc_sekundy = 0
 
     with col1:
         st.markdown("### 1️⃣ Wgranie i Kontrola Partii Audio/Video")
         media_file = st.file_uploader("📂 Wybierz plik audio lub wideo (.mp4, .mp3, .wav, .m4a):", type=["mp4", "mp3", "wav", "m4a"])
         
-        # Reset licznika jeśli użytkownik wgrał zupełnie nowy plik
         if media_file and media_file.name != st.session_state.poprzedni_plik_nazwa:
             st.session_state.zakres_minut = 0
             st.session_state.skumulowana_transkrypcja = ""
             st.session_state.aktywny_file_id = None
+            st.session_state.calkowita_dlugosc_sekundy = 0
             st.session_state.poprzedni_plik_nazwa = media_file.name
 
         if media_file:
             start_m = st.session_state.zakres_minut
             end_m = start_m + 15
-            
-            label_przycisku = f"🎙️ Generuj partię transkrypcji: minuty {start_m}:00 - {end_m}:00"
-            
-            if st.button(label_przycisku, type="secondary", use_container_width=True):
-                if not api_key: st.error("❌ Podaj klucz API Gemini!")
-                else:
-                    status_placeholder = st.empty()
-                    try:
-                        genai.configure(api_key=api_key)
-                        
-                        # Przesyłamy plik do chmury Google TYLKO RAZ przy pierwszej partii
-                        if st.session_state.aktywny_file_id is None:
+            calkowite_minuty = int(st.session_state.calkowita_dlugosc_sekundy / 60) + 1
+
+            # Sprawdzamy czy osiągnęliśmy koniec rzeczywistego pliku
+            czy_koniec_nagrania = (st.session_state.calkowita_dlugosc_sekundy > 0 and (start_m * 60) >= st.session_state.calkowita_dlugosc_sekundy)
+
+            if czy_koniec_nagrania:
+                st.success(f"🎉 To już wszystko! Pełne nagranie ({calkowite_minuty-1} min) zostało pomyślnie przetworzone.")
+            else:
+                label_przycisku = f"🎙️ Generuj partię transkrypcji: minuty {start_m}:00 - {end_m}:00"
+                if st.button(label_przycisku, type="secondary", use_container_width=True):
+                    if not api_key: st.error("❌ Podaj klucz API Gemini!")
+                    else:
+                        status_placeholder = st.empty()
+                        try:
+                            genai.configure(api_key=api_key)
+                            
+                            if st.session_state.aktywny_file_id is None:
+                                with status_placeholder.container():
+                                    st.info("⏳ Przesyłanie pliku źródłowego do chmury Google AI (tylko raz)...")
+                                temp_filename = f"temp_{uuid.uuid4()}_{media_file.name}"
+                                with open(temp_filename, "wb") as f:
+                                    f.write(media_file.getbuffer())
+                                uploaded_file_ref = genai.upload_file(path=temp_filename)
+                                
+                                sleep_time = 5
+                                while uploaded_file_ref.state.name == "PROCESSING":
+                                    time.sleep(sleep_time)
+                                    sleep_time = min(sleep_time * 1.5, 20)
+                                    uploaded_file_ref = genai.get_file(uploaded_file_ref.name)
+                                
+                                st.session_state.aktywny_file_id = uploaded_file_ref.name
+                                # POBRANIE CZASU TRWANIA: Zapisujemy całkowitą długość nagrania z chmury Google
+                                if hasattr(uploaded_file_ref, 'duration'):
+                                    dur_str = uploaded_file_ref.duration.get('seconds', '0')
+                                    st.session_state.calkowita_dlugosc_sekundy = int(dur_str)
+                                
+                                if os.path.exists(temp_filename): os.remove(temp_filename)
+
+                            file_ref = genai.get_file(st.session_state.aktywny_file_id)
+                            
+                            # Podwójna weryfikacja długości na wypadek asynchronicznego opóźnienia API
+                            if st.session_state.calkowita_dlugosc_sekundy == 0 and hasattr(file_ref, 'duration'):
+                                st.session_state.calkowita_dlugosc_sekundy = int(file_ref.duration.get('seconds', 0))
+
                             with status_placeholder.container():
-                                st.info("⏳ Przesyłanie pliku źródłowego do chmury Google AI (tylko za pierwszym razem)...")
-                            temp_filename = f"temp_{uuid.uuid4()}_{media_file.name}"
-                            with open(temp_filename, "wb") as f:
-                                f.write(media_file.getbuffer())
-                            uploaded_file_ref = genai.upload_file(path=temp_filename)
-                            
-                            sleep_time = 5
-                            while uploaded_file_ref.state.name == "PROCESSING":
-                                time.sleep(sleep_time)
-                                sleep_time = min(sleep_time * 1.5, 20)
-                                uploaded_file_ref = genai.get_file(uploaded_file_ref.name)
-                            
-                            st.session_state.aktywny_file_id = uploaded_file_ref.name
-                            if os.path.exists(temp_filename): os.remove(temp_filename)
+                                st.info(f"⏳ Odsłuchiwanie i transkrypcja fragmentu {start_m}:00 - {end_m}:00...")
 
-                        # Pobieramy referencję do wcześniej wgranego pliku
-                        file_ref = genai.get_file(st.session_state.aktywny_file_id)
-                        
-                        with status_placeholder.container():
-                            st.info(f"⏳ Odsłuchiwanie i przetwarzanie partii: minuty {start_m}:00 do {end_m}:00...")
-
-                        model_transkrybent = genai.GenerativeModel(model_name="gemini-3.5-flash")
-                        prompt_tr = (
-                            f"Przeanalizuj nadesłany plik wyłącznie w przedziale czasowym od {start_m}:00 do {end_m}:00 na osi czasu.\n"
-                            "Stwórz bardzo dokładną transkrypcję ortograficzną słowo w słowo z tego konkretnego fragmentu.\n"
-                            "Zastosuj podział na role: Ania (Dietetyk) oraz Opiekun. Nie opisuj fragmentów przed ani po tym czasie."
-                        )
-                        
-                        response_tr = model_transkrybent.generate_content([prompt_tr, file_ref])
-                        nowy_tekst = response_tr.text.strip()
-                        
-                        # Doklejamy tekst nowej partii do dotychczas zebranego bufora
-                        naglowek_partii = f"\n\n--- 📌 CZĘŚĆ: {start_m}:00 - {end_m}:00 ---\n"
-                        st.session_state.skumulowana_transkrypcja += naglowek_partii + nowy_tekst
-                        
-                        # Przesuwamy wskaźnik osi czasu o kolejne 15 minut do przodu
-                        st.session_state.zakres_minut += 15
-                        status_placeholder.empty()
-                        st.toast("Partia załadowana!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"🚨 Błąd przetwarzania partii: {e}")
+                            model_transkrybent = genai.GenerativeModel(model_name="gemini-3.5-flash")
+                            prompt_tr = (
+                                f"Przeanalizuj nadesłany plik wyłącznie w przedziale czasowym od {start_m}:00 do {end_m}:00 na osi czasu.\n"
+                                "Stwórz bardzo dokładną transkrypcję ortograficzną słowo w słowo z tego konkretnego fragmentu.\n"
+                                "Zastosuj podział na role: Ania (Dietetyk) oraz Opiekun. Nie opisuj fragmentów przed ani po tym czasie."
+                            )
+                            
+                            response_tr = model_transkrybent.generate_content([prompt_tr, file_ref])
+                            nowy_tekst = response_tr.text.strip()
+                            
+                            naglowek_partii = f"\n\n--- 📌 CZĘŚĆ: {start_m}:00 - {end_m}:00 ---\n"
+                            st.session_state.skumulowana_transkrypcja += naglowek_partii + nowy_tekst
+                            
+                            st.session_state.zakres_minut += 15
+                            status_placeholder.empty()
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"🚨 Błąd przetwarzania partii: {e}")
             
-            # Przycisk informujący system, że przeszliśmy już przez cały plik wideo
             if st.session_state.zakres_minut > 0:
-                if st.button("🏁 Oznacz transkrypcję jako kompletną (Usuń plik z chmury)", type="primary"):
-                    if st.session_state.aktywny_file_id:
+                if st.button("🏁 Wyczyszczenie sesji i usunięcie pliku z chmury", type="primary", use_container_width=True):
+                    if st.session_state.aktywny_file_id and st.session_state.aktywny_file_id != "COMPLETED":
                         try:
                             genai.configure(api_key=api_key)
                             genai.delete_file(st.session_state.aktywny_file_id)
                         except: pass
-                        st.session_state.aktywny_file_id = "COMPLETED"
-                        st.success("🎉 Całość rozmowy została pomyślnie połączona i zabezpieczona!")
-                        st.rerun()
+                    st.session_state.aktywny_file_id = "COMPLETED"
+                    st.toast("🗑️ Plik tymczasowy usunięty z serwerów Google!")
 
-        # Okno z podsumowaniem złączonej transkrypcji (z wbudowanym podziałem na role)
-        transcript = st.text_area("📝 Złączony tekst transkrypcji (Możesz edytować):", value=st.session_state.skumulowana_transkrypcja, height=340, key="transkrypcja_obszar")
+        # POPRAWKA: Przeniesienie pola tekstowego wyżej i powiązanie wartości bezpośrednio z buforem stanu sesji
+        transcript = st.text_area("📝 Złączony tekst transkrypcji (Możesz edytować):", value=st.session_state.skumulowana_transkrypcja, height=390, key="transkrypcja_obszar")
 
     with col2:
         st.markdown("### 2️⃣ Budowanie gotowego dokumentu Word")
@@ -310,7 +312,7 @@ with tab1:
                                     "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
                                     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
                                     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowane dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
                                     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
                                     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
                                     "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
