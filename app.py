@@ -36,7 +36,7 @@ TEKST_INNE_SMACZKI_STALY = (
     "Wprowadzając do codziennej rutyny jakiekolwiek inne smaczki komercyjne, należy bezwzględnie "
     "pamiętać o kontrolowaniu ich kaloryczności, aby nie zaburzyć bilansu nowej diety pacjenta.\n\n"
     "Szczegółowy poradnik oraz instrukcję, jak samodzielnie wyliczyć kaloryczność dowolnego produktu komercyjnego "
-    "na podstawie danych z etykiety, znajdawą Państwo w naszym artykule: "
+    "na podstawie danych z etykiety, znajdą Państwo w naszym artykule: "
     "https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow"
 )
 
@@ -168,99 +168,116 @@ with st.sidebar:
     api_key = st.text_input("Klucz API Gemini", type="password")
     model_choice = st.selectbox("Wybierz model", ["gemini-3.5-flash", "gemini-3.1-pro"])
 
-tab1, tab2 = st.tabs(["🚀 Automatyczny Transkrybent i Generator", "🎙️ Głosowy Edytor (Voice Editor)"])
+tab1, tab2 = st.tabs(["🚀 Partie Transkrypcji i Generator", "🎙️ Głosowy Edytor (Voice Editor)"])
 
+# ==============================================================================
+# 🚀 ZAKŁADKA 1: ETAPOWY HUB MULTIMEDIALNY (CHUNKED TRANSCRIPTION)
+# ==============================================================================
 with tab1:
-    st.title("🐾 Multimedialny Hub MeatPoint.io")
-    st.markdown("Wgraj plik wideo z Google Meet lub nagranie głosowe z konsultacji. Model asynchronicznie stworzy transkrypcję bez limitów wielkości i wygeneruje finalny protokół.")
+    st.title("🐾 Multimedialny Hub MeatPoint.io (Wersja Krokowa)")
+    st.markdown("Wgraj plik wideo/audio. Aplikacja pozwala na generowanie transkrypcji partiami po 15 minut, całkowicie omijając limity sieciowe chmury Google.")
     
     col1, col2 = st.columns([1, 1], gap="large")
     
+    # Inicjalizacja stanów krokowych w pamięci Streamlit
+    if 'zakres_minut' not in st.session_state: st.session_state.zakres_minut = 0
+    if 'skumulowana_transkrypcja' not in st.session_state: st.session_state.skumulowana_transkrypcja = ""
+    if 'aktywny_file_id' not in st.session_state: st.session_state.aktywny_file_id = None
+    if 'poprzedni_plik_nazwa' not in st.session_state: st.session_state.poprzedni_plik_nazwa = ""
+
     with col1:
-        st.markdown("### 1️⃣ Wgranie pliku i Transkrypcja")
+        st.markdown("### 1️⃣ Wgranie i Kontrola Partii Audio/Video")
         media_file = st.file_uploader("📂 Wybierz plik audio lub wideo (.mp4, .mp3, .wav, .m4a):", type=["mp4", "mp3", "wav", "m4a"])
         
-        if 'aktywna_transkrypcja' not in st.session_state: st.session_state.aktywna_transkrypcja = ""
-        
-        if st.button("🎙️ Uruchom inteligentną transkrypcję AI", type="secondary", use_container_width=True):
-            if not api_key or not media_file: st.error("❌ Podaj klucz API oraz wgraj plik!")
-            else:
-                status_placeholder = st.empty()
-                try:
-                    genai.configure(api_key=api_key)
-                    
-                    with status_placeholder.container():
-                        st.info("⏳ Krok 1/3: Przesyłanie dużego pliku do bezpiecznej chmury Google AI...")
-                    
-                    temp_filename = f"temp_{uuid.uuid4()}_{media_file.name}"
-                    with open(temp_filename, "wb") as f:
-                        f.write(media_file.getbuffer())
-                    
-                    uploaded_file_ref = genai.upload_file(path=temp_filename)
-                    
-                    # POPRAWKA: Algorytm Wykładniczego Wydłużania Czasu (Exponential Backoff) chroniący przed błędem 503
-                    sleep_time = 5
-                    total_waited = 0
-                    while uploaded_file_ref.state.name == "PROCESSING":
-                        with status_placeholder.container():
-                            st.info(f"⏳ Krok 2/3: Trwa zaawansowana analiza audio przez Gemini... (Czekam już {total_waited}s, ponowne sprawdzenie za {sleep_time}s)")
-                        time.sleep(sleep_time)
-                        total_waited += sleep_time
-                        # Stopniowo wydłużamy interwał zapytań do serwera
-                        sleep_time = min(sleep_time * 1.5, 30) 
-                        uploaded_file_ref = genai.get_file(uploaded_file_ref.name)
-                    
-                    if uploaded_file_ref.state.name == "FAILED":
-                        raise Exception("Plik nie mógł zostać przetworzony przez serwery Google.")
+        # Reset licznika jeśli użytkownik wgrał zupełnie nowy plik
+        if media_file and media_file.name != st.session_state.poprzedni_plik_nazwa:
+            st.session_state.zakres_minut = 0
+            st.session_state.skumulowana_transkrypcja = ""
+            st.session_state.aktywny_file_id = None
+            st.session_state.poprzedni_plik_nazwa = media_file.name
 
-                    with status_placeholder.container():
-                        st.info("⏳ Krok 3/3: Generowanie pełnego tekstu transkrypcji z podziałem na role...")
-
-                    model_transkrybent = genai.GenerativeModel(model_name="gemini-3.5-flash")
-                    prompt_tr = (
-                        "Przeanalizuj to nagranie audio/wideo z wizyty dietetycznej zwierzęcia. "
-                        "Stwórz bardzo dokładną transkrypcję ortograficzną SŁOWO W SŁOWO. "
-                        "Zastosuj wyraźny podział na role (Diarization), oznaczając kiedy mówi Ania (Dietetyk), "
-                        "a kiedy właściciel zwierzęcia (Opiekun). Nie pomijaj żadnych nazw leków, dawek ani wyników badań."
-                    )
-                    
-                    # Obsługa potencjalnego przeciążenia modelu przy samym generowaniu tekstu
+        if media_file:
+            start_m = st.session_state.zakres_minut
+            end_m = start_m + 15
+            
+            label_przycisku = f"🎙️ Generuj partię transkrypcji: minuty {start_m}:00 - {end_m}:00"
+            
+            if st.button(label_przycisku, type="secondary", use_container_width=True):
+                if not api_key: st.error("❌ Podaj klucz API Gemini!")
+                else:
+                    status_placeholder = st.empty()
                     try:
-                        response_tr = model_transkrybent.generate_content([prompt_tr, uploaded_file_ref])
-                        st.session_state.aktywna_transkrypcja = response_tr.text
-                    except Exception as gemini_err:
-                        if "503" in str(gemini_err) or "high demand" in str(gemini_err).lower():
-                            with status_placeholder.container():
-                                st.warning("⚠️ Serwery Google zgłaszają duże obciążenie. Automatyczna próba ponowienia za 15 sekund...")
-                            time.sleep(15)
-                            response_tr = model_transkrybent.generate_content([prompt_tr, uploaded_file_ref])
-                            st.session_state.aktywna_transkrypcja = response_tr.text
-                        else:
-                            raise gemini_err
-                    
-                    # Czyszczenie śladów
-                    try:
-                        genai.delete_file(uploaded_file_ref.name)
-                    except: pass
-                    if os.path.exists(temp_filename): os.remove(temp_filename)
+                        genai.configure(api_key=api_key)
                         
-                    status_placeholder.empty()
-                    st.success("✅ Pełna transkrypcja wygenerowana pomyślnie!")
-                    st.rerun()
-                except Exception as e:
-                    if os.path.exists(temp_filename): os.remove(temp_filename)
-                    st.error(f"🚨 Status: Nie udało się dokończyć transkrypcji z powodu przeciążenia sieci Google. Spróbuj kliknąć przycisk ponownie za chwilę. Szczegóły: {e}")
-        
-        transcript = st.text_area("📝 Podgląd / Edycja tekstu transkrypcji:", value=st.session_state.aktywna_transkrypcja, height=380, key="transkrypcja_obszar")
+                        # Przesyłamy plik do chmury Google TYLKO RAZ przy pierwszej partii
+                        if st.session_state.aktywny_file_id is None:
+                            with status_placeholder.container():
+                                st.info("⏳ Przesyłanie pliku źródłowego do chmury Google AI (tylko za pierwszym razem)...")
+                            temp_filename = f"temp_{uuid.uuid4()}_{media_file.name}"
+                            with open(temp_filename, "wb") as f:
+                                f.write(media_file.getbuffer())
+                            uploaded_file_ref = genai.upload_file(path=temp_filename)
+                            
+                            sleep_time = 5
+                            while uploaded_file_ref.state.name == "PROCESSING":
+                                time.sleep(sleep_time)
+                                sleep_time = min(sleep_time * 1.5, 20)
+                                uploaded_file_ref = genai.get_file(uploaded_file_ref.name)
+                            
+                            st.session_state.aktywny_file_id = uploaded_file_ref.name
+                            if os.path.exists(temp_filename): os.remove(temp_filename)
+
+                        # Pobieramy referencję do wcześniej wgranego pliku
+                        file_ref = genai.get_file(st.session_state.aktywny_file_id)
+                        
+                        with status_placeholder.container():
+                            st.info(f"⏳ Odsłuchiwanie i przetwarzanie partii: minuty {start_m}:00 do {end_m}:00...")
+
+                        model_transkrybent = genai.GenerativeModel(model_name="gemini-3.5-flash")
+                        prompt_tr = (
+                            f"Przeanalizuj nadesłany plik wyłącznie w przedziale czasowym od {start_m}:00 do {end_m}:00 na osi czasu.\n"
+                            "Stwórz bardzo dokładną transkrypcję ortograficzną słowo w słowo z tego konkretnego fragmentu.\n"
+                            "Zastosuj podział na role: Ania (Dietetyk) oraz Opiekun. Nie opisuj fragmentów przed ani po tym czasie."
+                        )
+                        
+                        response_tr = model_transkrybent.generate_content([prompt_tr, file_ref])
+                        nowy_tekst = response_tr.text.strip()
+                        
+                        # Doklejamy tekst nowej partii do dotychczas zebranego bufora
+                        naglowek_partii = f"\n\n--- 📌 CZĘŚĆ: {start_m}:00 - {end_m}:00 ---\n"
+                        st.session_state.skumulowana_transkrypcja += naglowek_partii + nowy_tekst
+                        
+                        # Przesuwamy wskaźnik osi czasu o kolejne 15 minut do przodu
+                        st.session_state.zakres_minut += 15
+                        status_placeholder.empty()
+                        st.toast("Partia załadowana!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"🚨 Błąd przetwarzania partii: {e}")
+            
+            # Przycisk informujący system, że przeszliśmy już przez cały plik wideo
+            if st.session_state.zakres_minut > 0:
+                if st.button("🏁 Oznacz transkrypcję jako kompletną (Usuń plik z chmury)", type="primary"):
+                    if st.session_state.aktywny_file_id:
+                        try:
+                            genai.configure(api_key=api_key)
+                            genai.delete_file(st.session_state.aktywny_file_id)
+                        except: pass
+                        st.session_state.aktywny_file_id = "COMPLETED"
+                        st.success("🎉 Całość rozmowy została pomyślnie połączona i zabezpieczona!")
+                        st.rerun()
+
+        # Okno z podsumowaniem złączonej transkrypcji (z wbudowanym podziałem na role)
+        transcript = st.text_area("📝 Złączony tekst transkrypcji (Możesz edytować):", value=st.session_state.skumulowana_transkrypcja, height=340, key="transkrypcja_obszar")
 
     with col2:
         st.markdown("### 2️⃣ Budowanie gotowego dokumentu Word")
         LINK_DO_ARKUSZA = "https://docs.google.com/spreadsheets/d/1qgSX_t4_fb36CqtFUluPDKDQILpR9_SLOlYBPTXSTes/edit?usp=sharing"
         
-        if st.button("🚀 Wygeneruj i uzupełnij Protokół Word", type="primary", use_container_width=True):
-            if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz upewnij się, że transkrypcja nie jest pusta!")
+        if st.button("🚀 Wygeneruj finalny Protokół Word na bazie zebranego tekstu", type="primary", use_container_width=True):
+            if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz upewnij się, że okno złączonej transkrypcji po lewej stronie nie jest puste!")
             else:
-                with st.spinner("Analiza kliniczna i dopasowywanie załączników..."):
+                with st.spinner("Analiza kliniczna całego tekstu i dopasowywanie linków..."):
                     try:
                         csv_url = LINK_DO_ARKUSZA.replace('/edit?usp=sharing', '/export?format=csv')
                         df = pd.read_csv(csv_url); l_p = ""
@@ -306,7 +323,7 @@ with tab1:
                                 prefix = "" if naglowek.startswith("###") else "## "
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Uzupełnij precyzyjnymi faktami medycznymi z transkrypcji.\n"
 
-                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
+                        p = f"Przeanalizuj podaną zbiorczą transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu wynikowego:", value=res.text, height=350, key="podglad_gen")
