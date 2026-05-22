@@ -115,15 +115,14 @@ def konwertuj_do_docx(tekst_md):
         sec.header.paragraphs[0].paragraph_format.space_after = Pt(0)
         sec.header.paragraphs[0].add_run().add_picture("logo.png", width=Inches(1.0))
 
-    w_metryczce = True
-
     for line in tekst_md.split('\n'):
         l_s = line.strip()
         if not l_s: continue
         l_s = l_s.replace('**', '')
         
         if "DATA WIZYTY:" in l_s.upper():
-            p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(6)
             poczatek_daty, *koniec_daty = l_s.split(':', 1)
             p.add_run(poczatek_daty + ': ').bold = True
@@ -165,7 +164,7 @@ with st.sidebar:
 tab1, tab2 = st.tabs(["🚀 Partie Transkrypcji i Generator", "🎙️ Głosowy Edytor (Voice Editor)"])
 
 # ==============================================================================
-# 🚀 ZAKŁADKA 1: INTELIGENTNY HUB KROKOWY Z DETEKCJĄ KOŃCA PLIKU
+# 🚀 ZAKŁADKA 1: POPRAWIONY HUB KROKOWY (Z PEŁNYM RESETEM STANU)
 # ==============================================================================
 with tab1:
     st.title("🐾 Multimedialny Hub MeatPoint.io (Wersja Krokowa)")
@@ -178,11 +177,21 @@ with tab1:
     if 'aktywny_file_id' not in st.session_state: st.session_state.aktywny_file_id = None
     if 'poprzedni_plik_nazwa' not in st.session_state: st.session_state.poprzedni_plik_nazwa = ""
     if 'calkowita_dlugosc_sekundy' not in st.session_state: st.session_state.calkowita_dlugosc_sekundy = 0
+    if 't_refresh_key' not in st.session_state: st.session_state.t_refresh_key = str(uuid.uuid4())
 
     with col1:
         st.markdown("### 1️⃣ Wgranie i Kontrola Partii Audio/Video")
-        media_file = st.file_uploader("📂 Wybierz plik audio lub wideo (.mp4, .mp3, .wav, .m4a):", type=["mp4", "mp3", "wav", "m4a"])
+        media_file = st.file_uploader("📂 Wybierz plik audio lub wideo (.mp4, .mp3, .wav, .m4a):", type=["mp4", "mp3", "wav", "m4a"], key=f"src_{st.session_state.t_refresh_key}")
         
+        # POPRAWKA AUTOMATYCZNA: Jeśli plik zniknął lub zmieniła się jego nazwa - natychmiast czyść stany
+        if not media_file and (st.session_state.zakres_minut > 0 or st.session_state.skumulowana_transkrypcja != ""):
+            st.session_state.zakres_minut = 0
+            st.session_state.skumulowana_transkrypcja = ""
+            st.session_state.aktywny_file_id = None
+            st.session_state.calkowita_dlugosc_sekundy = 0
+            st.session_state.poprzedni_plik_nazwa = ""
+            st.rerun()
+
         if media_file and media_file.name != st.session_state.poprzedni_plik_nazwa:
             st.session_state.zakres_minut = 0
             st.session_state.skumulowana_transkrypcja = ""
@@ -195,7 +204,6 @@ with tab1:
             end_m = start_m + 15
             calkowite_minuty = int(st.session_state.calkowita_dlugosc_sekundy / 60) + 1
 
-            # Sprawdzamy czy osiągnęliśmy koniec rzeczywistego pliku
             czy_koniec_nagrania = (st.session_state.calkowita_dlugosc_sekundy > 0 and (start_m * 60) >= st.session_state.calkowita_dlugosc_sekundy)
 
             if czy_koniec_nagrania:
@@ -224,7 +232,6 @@ with tab1:
                                     uploaded_file_ref = genai.get_file(uploaded_file_ref.name)
                                 
                                 st.session_state.aktywny_file_id = uploaded_file_ref.name
-                                # POBRANIE CZASU TRWANIA: Zapisujemy całkowitą długość nagrania z chmury Google
                                 if hasattr(uploaded_file_ref, 'duration'):
                                     dur_str = uploaded_file_ref.duration.get('seconds', '0')
                                     st.session_state.calkowita_dlugosc_sekundy = int(dur_str)
@@ -233,7 +240,6 @@ with tab1:
 
                             file_ref = genai.get_file(st.session_state.aktywny_file_id)
                             
-                            # Podwójna weryfikacja długości na wypadek asynchronicznego opóźnienia API
                             if st.session_state.calkowita_dlugosc_sekundy == 0 and hasattr(file_ref, 'duration'):
                                 st.session_state.calkowita_dlugosc_sekundy = int(file_ref.duration.get('seconds', 0))
 
@@ -260,17 +266,24 @@ with tab1:
                             st.error(f"🚨 Błąd przetwarzania partii: {e}")
             
             if st.session_state.zakres_minut > 0:
-                if st.button("🏁 Wyczyszczenie sesji i usunięcie pliku z chmury", type="primary", use_container_width=True):
+                # POPRAWKA KLUCZOWA: Pełne czyszczenie pamięci podręcznej i reset wskaźników do poziomu zera
+                if st.button("🗑️ Wyczyszczenie sesji i usunięcie pliku z chmury", type="primary", use_container_width=True):
                     if st.session_state.aktywny_file_id and st.session_state.aktywny_file_id != "COMPLETED":
                         try:
                             genai.configure(api_key=api_key)
                             genai.delete_file(st.session_state.aktywny_file_id)
                         except: pass
-                    st.session_state.aktywny_file_id = "COMPLETED"
-                    st.toast("🗑️ Plik tymczasowy usunięty z serwerów Google!")
+                    st.session_state.zakres_minut = 0
+                    st.session_state.skumulowana_transkrypcja = ""
+                    st.session_state.aktywny_file_id = None
+                    st.session_state.calkowita_dlugosc_sekundy = 0
+                    st.session_state.poprzedni_plik_nazwa = ""
+                    st.session_state.t_refresh_key = str(uuid.uuid4()) # Wymuszenie odświeżenia file_uploader
+                    st.toast("🗑️ Sesja zresetowana! Narzędzie gotowe na nowy plik od 0:00.")
+                    st.rerun()
 
-        # POPRAWKA: Przeniesienie pola tekstowego wyżej i powiązanie wartości bezpośrednio z buforem stanu sesji
-        transcript = st.text_area("📝 Złączony tekst transkrypcji (Możesz edytować):", value=st.session_state.skumulowana_transkrypcja, height=390, key="transkrypcja_obszar")
+        # Dynamicznie zsynchronizowany podgląd pola tekstowego
+        transcript = st.text_area("📝 Złączony tekst transkrypcji (Możesz edytować):", value=st.session_state.skumulowana_transkrypcja, height=390, key=f"tx_{st.session_state.t_refresh_key}")
 
     with col2:
         st.markdown("### 2️⃣ Budowanie gotowego dokumentu Word")
@@ -312,7 +325,7 @@ with tab1:
                                     "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
                                     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
                                     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowane dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
+                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
                                     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
                                     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
                                     "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
