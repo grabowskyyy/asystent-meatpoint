@@ -83,15 +83,39 @@ def add_hyperlink(p, url, text):
     return hl
 
 def parsuj_i_formatuj_tekst(p, tekst):
+    # NAPRAWA: Bezpieczne parsowanie czerwonych alertów oraz pogrubień Markdown (**) wewnątrz linii
     parts = tekst.split('[BRAK INFORMACJI]')
     for i, part in enumerate(parts):
         if part:
-            segs = re.split(r'(https?://[^\s]+)', part)
-            for idx, seg in enumerate(segs):
-                if idx % 2 == 1: add_hyperlink(p, seg, seg)
-                else: p.add_run(seg).bold = False
+            # Dzielimy fragment na części pogrubione za pomocą wyrażenia regularnego
+            sub_segs = re.split(r'(\*\*.*?\*\*)', part)
+            for sub_seg in sub_segs:
+                if not sub_seg: continue
+                
+                # Jeśli to fragment do pogrubienia
+                if sub_seg.startswith('**') and sub_seg.endswith('**'):
+                    czysty_tekst = sub_seg.replace('**', '')
+                    # Sprawdzamy czy wewnątrz pogrubienia jest link
+                    url_segs = re.split(r'(https?://[^\s]+)', czysty_tekst)
+                    for idx, u_seg in enumerate(url_segs):
+                        if idx % 2 == 1:
+                            add_hyperlink(p, u_seg, u_seg)
+                        else:
+                            run = p.add_run(u_seg)
+                            run.bold = True
+                else:
+                    # Zwykły tekst (może zawierać linki)
+                    url_segs = re.split(r'(https?://[^\s]+)', sub_seg)
+                    for idx, u_seg in enumerate(url_segs):
+                        if idx % 2 == 1:
+                            add_hyperlink(p, u_seg, u_seg)
+                        else:
+                            p.add_run(u_seg).bold = False
+                            
         if i < len(parts) - 1:
-            ra = p.add_run('[BRAK INFORMACJI]'); ra.bold = True; ra.font.color.rgb = RGBColor(220, 38, 38)
+            ra = p.add_run('[BRAK INFORMACJI]')
+            ra.bold = True
+            ra.font.color.rgb = RGBColor(220, 38, 38)
 
 def konwertuj_do_docx(tekst_md):
     doc = Document()
@@ -119,36 +143,46 @@ def konwertuj_do_docx(tekst_md):
     for line in tekst_md.split('\n'):
         l_s = line.strip()
         if not l_s: continue
-        l_s = l_s.replace('**', '')
         
         if "DATA WIZYTY:" in l_s.upper():
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(6)
             poczatek_daty, *koniec_daty = l_s.split(':', 1)
-            p.add_run(poczatek_daty + ': ').bold = True
+            # Usunięcie gwiazdek z samej etykiety nagłówka
+            poczatek_czysty = poczatek_daty.replace('**', '').strip()
+            p.add_run(poczatek_czysty + ': ').bold = True
             if koniec_daty: parsuj_i_formatuj_tekst(p, koniec_daty[0].strip())
             continue
 
         if l_s.startswith('## '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
-            r = p.add_run(l_s.replace('## ', '')); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
+            czysty_h2 = l_s.replace('## ', '').replace('**', '')
+            r = p.add_run(czysty_h2); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
         elif l_s.startswith('### '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(8), Pt(2)
-            r = p.add_run(l_s.replace('### ', '')); r.bold, r.font.size = True, Pt(10.5)
+            czysty_h3 = l_s.replace('### ', '').replace('**', '')
+            r = p.add_run(czysty_h3); r.bold, r.font.size = True, Pt(10.5)
         elif l_s.startswith('- ') or l_s.startswith('* ') or l_s.startswith('• '):
             c_t = l_s.lstrip('-*• ').strip()
             p = doc.add_paragraph(style='List Bullet'); p.paragraph_format.space_after = Pt(3)
+            
+            # Analiza struktury wypunktowania z dwukropkiem (np. Rasa: ...)
             if ':' in c_t and not c_t.strip().startswith('http'):
                 pk_s, zk_s = c_t.split(':', 1)
-                if len(pk_s) < 45: p.add_run(pk_s.strip() + ': ').bold = True; parsuj_i_formatuj_tekst(p, zk_s); continue
+                if len(pk_s) < 45: 
+                    pk_czysty = pk_s.replace('**', '').strip()
+                    p.add_run(pk_czysty + ': ').bold = True
+                    parsuj_i_formatuj_tekst(p, zk_s)
+                    continue
             parsuj_i_formatuj_tekst(p, c_t)
         else:
             if ':' in l_s and not l_s.strip().startswith('http'):
                 pk_s, zk_s = l_s.split(':', 1)
                 if len(pk_s) < 45: 
                     p = doc.add_paragraph()
-                    p.add_run(pk_s.strip() + ': ').bold = True
+                    pk_czysty = pk_s.replace('**', '').strip()
+                    p.add_run(pk_czysty + ': ').bold = True
                     parsuj_i_formatuj_tekst(p, zk_s)
                     continue
             p = doc.add_paragraph(); parsuj_i_formatuj_tekst(p, l_s)
@@ -188,7 +222,6 @@ with tab1:
                         
                         genai.configure(api_key=api_key)
                         
-                        # Absolutny rygor anty-halucynacyjny w system_instruction
                         m = genai.GenerativeModel(
                             model_name=model_choice, 
                             system_instruction=(
@@ -196,6 +229,7 @@ with tab1:
                                 "Pisz WYŁĄCZNIE absolutną prawdę na podstawie dostarczonego pliku tekstowego transkrypcji. "
                                 "ZAKAZ zmyślania jakichkolwiek faktów, wyników badań, dawek leków czy preparatów celowanych. "
                                 "ZAKAZ samodzielnego wyliczania wartości biochemicznych karm, jeśli nie zostały podyktowane słowo w słowo. "
+                                "Jeśli chcesz coś wyróżnić medycznie (np. lek, dawkę lub kluczowy wniosek), używaj podwójnych gwiazdek **tekst**."
                                 "Jeśli brakuje jakichkolwiek danych dla danej etykiety lub sekcji, bezwarunkowo i sztywno wstaw fragment [BRAK INFORMACJI]."
                             )
                         )
