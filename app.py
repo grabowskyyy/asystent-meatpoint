@@ -24,7 +24,7 @@ TEKST_TYNDALIZACJA_STALY = (
     "Jeżeli robią Państwo dietę na dłużej niż 5-6 dni (mowa o diecie surowej) i chcą Państwo "
     "ją bezpiecznie przechowywać w słoiczkach w lodówce (bez zamrażania) LUB przygotowują Państwo "
     "dietę gotowaną (BACF) na zapas, konieczne jest przeprowadzenie procesu tyndalizacji (potrójnej pasteryzacji).\n\n"
-    "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
+    "Proces Greenwich skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
     "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
     "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozicnn"
@@ -173,7 +173,7 @@ def konwertuj_do_docx(tekst_md):
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 # ==============================================================================
-# 🎨 EKSPERCKI INTERFEJS WIZUALNY PREMIUM CODES (POPPINS, GRADIENT & KONTRAST)
+# 🎨 PROFESJONALNY, RESTRYKCYJNY BRANDING PREMIUM (POPPINS, GRADIENT & FIX KONTRASTU)
 # ==============================================================================
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
 
@@ -183,58 +183,81 @@ st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* Globalne czyszczenie i wstrzykiwanie tła bazy */
-        .stApp, html, body, [data-testid="stHeader"], .main .block-container {
+        /* 1. Usunięcie błędu napisu systemowego w lewym górnym rogu */
+        span[data-testid="collapsedControl"] {
+            display: none !important;
+        }
+        .stApp header {
+            display: none !important;
+        }
+        
+        /* 2. Globalne wstrzyknięcie tła i czcionki Poppins */
+        .stApp, html, body, .main .block-container {
             background-color: #F9F7F2 !important;
         }
         
-        /* Lewy panel boczny jako odrębna, czytelna przestrzeń */
-        [data-testid="stSidebar"] {
+        /* Panel boczny autoryzacji */
+        [data-testid="stSidebar"], [data-testid="stSidebar"] section {
             background-color: #F3F0E7 !important;
             border-right: 1px solid #E2E8F0 !important;
         }
         
-        /* Unifikacja typografii - czcionka Poppins z pełnym kontrastem */
+        /* Pełny kontrast i kolor dla wszystkich typów tekstów */
         h1, h2, h3, h4, h5, h6, p, label, li, span, th, td, small {
             color: #1E293B !important;
             font-family: 'Poppins', sans-serif !important;
         }
         
-        /* POPRAWKA: Kontrast napisów pomocniczych w uploaderze plików */
-        [data-testid="stFileUploader"] section div, [data-testid="stFileUploader"] span, [data-testid="stFileUploader"] small {
-            color: #334155 !important;
+        /* 3. NAPRAWA INPUTÓW I SELECTBOXÓW W PANELU BOCZNYM (Koniec z czarnym tłem) */
+        .stTextInput input, 
+        .stSelectbox div[data-baseweb="select"], 
+        .stSelectbox div,
+        .stSelectbox span,
+        div[data-testid="stWidgetLabel"] p {
+            background-color: #FFFFFF !important;
+            color: #1E293B !important;
+            border-radius: 12px !important;
+            font-family: 'Poppins', sans-serif !important;
         }
+        .stTextInput input, .stSelectbox div[data-baseweb="select"] {
+            border: 2px solid #CBD5E1 !important;
+        }
+        
+        /* Ikona oka i przyciski wewnątrz pól input */
+        .stTextInput button {
+            color: #4D6C70 !important;
+            background-color: transparent !important;
+        }
+        
+        /* 4. NAPRAWA UPLOADERA PLIKÓW (Koniec z ciemnym boksem) */
         [data-testid="stFileUploader"] {
             background-color: #FFFFFF !important;
             border: 2px dashed #4D6C70 !important;
             border-radius: 12px !important;
         }
-        
-        /* POPRAWKA: Wymuszenie ciemnego, czytelnego koloru tekstu w selectboxach i inputach */
-        .stTextInput input, .stSelectbox div[data-baseweb="select"], .stSelectbox span, .stSelectbox div {
-            color: #1E293B !important;
-            font-family: 'Poppins', sans-serif !important;
-        }
-        .stTextInput input, .stSelectbox div[data-baseweb="select"] {
-            border-radius: 12px !important;
+        [data-testid="stFileUploader"] section {
             background-color: #FFFFFF !important;
-            border: 2px solid #CBD5E1 !important;
         }
-        
-        /* Projekt zakładek systemowych */
-        button[data-baseweb="tab"] {
-            color: #64748B !important;
-            font-weight: 500 !important;
+        [data-testid="stFileUploader"] section div, 
+        [data-testid="stFileUploader"] span, 
+        [data-testid="stFileUploader"] small,
+        [data-testid="stFileUploader"] button {
+            color: #334155 !important;
             font-family: 'Poppins', sans-serif !important;
-            background-color: transparent !important;
-        }
-        button[data-baseweb="tab"][aria-selected="true"] {
-            color: #4D6C70 !important;
-            font-weight: 600 !important;
-            border-bottom: 3px solid #4D6C70 !important;
         }
         
-        /* Obszar roboczy tekstu area */
+        /* 5. NAPRAWA STATUSÓW I ALERTÓW KROKOWYCH (st.spinner, st.info, st.error) */
+        div[data-testid="stAlert"] {
+            background-color: #FFFFFF !important;
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
+        }
+        div[data-testid="stAlert"] div {
+            color: #1E293B !important;
+        }
+        
+        /* Projekt obszaru roboczego tekstu */
         .stTextArea textarea {
             background-color: #FFFFFF !important;
             border: 2px solid #CBD5E1 !important;
@@ -247,7 +270,20 @@ st.markdown("""
             box-shadow: 0 0 0 2px rgba(77, 108, 112, 0.2) !important;
         }
         
-        /* EKSPERCKI AKCENT: Prestiżowy gradient butelkowy dla głównych przycisków */
+        /* Zakładki górne */
+        button[data-baseweb="tab"] {
+            color: #64748B !important;
+            font-weight: 500 !important;
+            font-family: 'Poppins', sans-serif !important;
+            background-color: transparent !important;
+        }
+        button[data-baseweb="tab"][aria-selected="true"] {
+            color: #4D6C70 !important;
+            font-weight: 600 !important;
+            border-bottom: 3px solid #4D6C70 !important;
+        }
+        
+        /* Ekspercki gradient przycisków akcji */
         div.stButton > button {
             background: linear-gradient(135deg, #4D6C70 0%, #354B4E 100%) !important;
             color: #FFFFFF !important;
@@ -264,9 +300,6 @@ st.markdown("""
             box-shadow: 0 8px 16px rgba(77, 108, 112, 0.4) !important;
             transform: translateY(-1px) !important;
             filter: brightness(1.1);
-        }
-        div.stButton > button:active {
-            transform: translateY(1px) !important;
         }
         
         #MainMenu, footer {visibility: hidden;}
@@ -322,7 +355,7 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.ionnPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dipozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.ionnPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
