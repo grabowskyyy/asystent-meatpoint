@@ -20,7 +20,6 @@ STRUKTURA_PROTOKOLU = [
     "Badania kontrolne:", "Załączniki:"
 ]
 
-# Stałe bloki edukacyjne z właściwymi, działającymi linkami MeatPoint
 TEKST_TYNDALIZACJA_STALY = (
     "Jeżeli robią Państwo dietę na dłużej niż 5-6 dni (mowa o diecie surowej) i chcą Państwo "
     "ją bezpiecznie przechowywać w słoiczkach w lodówce (bez zamrażania) LUB przygotowują Państwo "
@@ -28,7 +27,7 @@ TEKST_TYNDALIZACJA_STALY = (
     "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
     "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
-    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
+    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozicnn"
     "Dodatkowo przygotowaliśmy dla Państwa praktyczny poradnik w formie wideo na platformie YouTube, "
     "gdzie pokazujemy cały proces krok po kroku: https://www.youtube.com/watch?v=tyfT3kmq3ME"
 )
@@ -174,77 +173,102 @@ def konwertuj_do_docx(tekst_md):
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 # ==============================================================================
-# 🎨 TOTALNA, RESTRYKCYJNA NADPISKA STYLÓW CSS (BEZWZGLĘDNY PRIORYTET)
+# 🎨 EKSPERCKI INTERFEJS WIZUALNY PREMIUM CODES (POPPINS, GRADIENT & KONTRAST)
 # ==============================================================================
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
 
 st.markdown("""
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
-        /* Nadpisanie tła całej aplikacji, głównego kontenera i bocznego menu */
-        .stApp, html, body, [data-testid="stSidebar"], [data-testid="stHeader"], .main .block-container {
+        /* Globalne czyszczenie i wstrzykiwanie tła bazy */
+        .stApp, html, body, [data-testid="stHeader"], .main .block-container {
             background-color: #F9F7F2 !important;
         }
         
-        /* Nadpisanie wszystkich kolorów czcionek na ciemny grafit */
-        h1, h2, h3, h4, h5, h6, p, label, li, span, div, th, td {
-            color: #1E293B !important;
-            font-family: 'Inter', sans-serif !important;
+        /* Lewy panel boczny jako odrębna, czytelna przestrzeń */
+        [data-testid="stSidebar"] {
+            background-color: #F3F0E7 !important;
+            border-right: 1px solid #E2E8F0 !important;
         }
         
-        /* Stylizacja zakładek (Tabs) */
+        /* Unifikacja typografii - czcionka Poppins z pełnym kontrastem */
+        h1, h2, h3, h4, h5, h6, p, label, li, span, th, td, small {
+            color: #1E293B !important;
+            font-family: 'Poppins', sans-serif !important;
+        }
+        
+        /* POPRAWKA: Kontrast napisów pomocniczych w uploaderze plików */
+        [data-testid="stFileUploader"] section div, [data-testid="stFileUploader"] span, [data-testid="stFileUploader"] small {
+            color: #334155 !important;
+        }
+        [data-testid="stFileUploader"] {
+            background-color: #FFFFFF !important;
+            border: 2px dashed #4D6C70 !important;
+            border-radius: 12px !important;
+        }
+        
+        /* POPRAWKA: Wymuszenie ciemnego, czytelnego koloru tekstu w selectboxach i inputach */
+        .stTextInput input, .stSelectbox div[data-baseweb="select"], .stSelectbox span, .stSelectbox div {
+            color: #1E293B !important;
+            font-family: 'Poppins', sans-serif !important;
+        }
+        .stTextInput input, .stSelectbox div[data-baseweb="select"] {
+            border-radius: 12px !important;
+            background-color: #FFFFFF !important;
+            border: 2px solid #CBD5E1 !important;
+        }
+        
+        /* Projekt zakładek systemowych */
         button[data-baseweb="tab"] {
             color: #64748B !important;
-            font-weight: 600 !important;
+            font-weight: 500 !important;
+            font-family: 'Poppins', sans-serif !important;
             background-color: transparent !important;
         }
         button[data-baseweb="tab"][aria-selected="true"] {
             color: #4D6C70 !important;
+            font-weight: 600 !important;
             border-bottom: 3px solid #4D6C70 !important;
         }
         
-        /* Stylizacja dużych pól tekstowych (text_area) */
+        /* Obszar roboczy tekstu area */
         .stTextArea textarea {
             background-color: #FFFFFF !important;
             border: 2px solid #CBD5E1 !important;
             border-radius: 12px !important;
             color: #1E293B !important;
+            font-family: 'Poppins', sans-serif !important;
         }
-        /* Efekt podświetlenia pola tekstowego przy kliknięciu */
         .stTextArea textarea:focus {
             border-color: #4D6C70 !important;
-            box-shadow: 0 0 0 2px #4D6C70 !important;
+            box-shadow: 0 0 0 2px rgba(77, 108, 112, 0.2) !important;
         }
         
-        /* Pełna stylizacja i zaokrąglenie przycisków marki MeatPoint */
+        /* EKSPERCKI AKCENT: Prestiżowy gradient butelkowy dla głównych przycisków */
         div.stButton > button {
-            background-color: #4D6C70 !important;
+            background: linear-gradient(135deg, #4D6C70 0%, #354B4E 100%) !important;
             color: #FFFFFF !important;
             border-radius: 12px !important;
             border: none !important;
+            font-family: 'Poppins', sans-serif !important;
             font-weight: 600 !important;
-            padding: 0.6rem 2rem !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-            transition: all 0.2s ease-in-out !important;
+            letter-spacing: 0.3px !important;
+            padding: 0.7rem 2.2rem !important;
+            box-shadow: 0 4px 10px rgba(77, 108, 112, 0.3) !important;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
         div.stButton > button:hover {
-            background-color: #3B5457 !important;
-            color: #FFFFFF !important;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 8px 16px rgba(77, 108, 112, 0.4) !important;
             transform: translateY(-1px) !important;
+            filter: brightness(1.1);
         }
         div.stButton > button:active {
             transform: translateY(1px) !important;
         }
         
-        /* Zaokrąglenie selectboxów oraz inputów autoryzacji */
-        .stTextInput input, .stSelectbox div[data-baseweb="select"] {
-            border-radius: 12px !important;
-            background-color: #FFFFFF !important;
-            border: 1px solid #CBD5E1 !important;
-            color: #1E293B !important;
-        }
-        
-        /* Ukrycie domyślnego menu Streamlita na górze dla czystego efektu */
         #MainMenu, footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
@@ -254,7 +278,6 @@ with st.sidebar:
     api_key = st.text_input("Klucz API Gemini", type="password")
     model_choice = st.selectbox("Wybierz model", ["gemini-3.5-flash", "gemini-3.1-pro"])
 
-# Zmiana nazw samych zakładek na żądane formy
 tab1, tab2 = st.tabs(["🐾 Generator opisów wizyt", "🎙️ Edytor głosowy opisów wizyt"])
 
 # ==============================================================================
@@ -299,7 +322,7 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.ionnPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
