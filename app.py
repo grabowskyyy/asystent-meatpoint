@@ -28,7 +28,7 @@ TEKST_TYNDALIZACJA_STALY = (
     "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
     "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
-    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozicnn"
+    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
     "Dodatkowo przygotowaliśmy dla Państwa praktyczny poradnik w formie wideo na platformie YouTube, "
     "gdzie pokazujemy cały proces krok po kroku: https://www.youtube.com/watch?v=tyfT3kmq3ME"
 )
@@ -37,7 +37,7 @@ TEKST_INNE_SMACZKI_STALY = (
     "Wprowadzając do codziennej rutyny jakiekolwiek inne smaczki komercyjne, należy bezwzględnie "
     "pamiętać o kontrolowaniu ich kaloryczności, aby nie zaburzyć bilansu nowej diety pacjenta.\n\n"
     "Szczegółowy poradnik oraz instrukcję, jak samodzielnie wyliczyć kaloryczność dowolnego produktu komercyjnego "
-    "na podstawie danych z etykiety, znajdą Państwo w naszym artykule: "
+    "na podstawie danych z etykiety, znają Państwo w naszym artykule: "
     "https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow"
 )
 
@@ -184,13 +184,15 @@ with st.sidebar:
     api_key = st.text_input("Klucz API Gemini", type="password")
     model_choice = st.selectbox("Wybierz model", ["gemini-3.5-flash", "gemini-3.1-pro"])
 
-tab1, tab2 = st.tabs(["🚀 Generator Protokołów (Wklej Tekst)", "🎙️ Głosowy Edytor (Voice Editor)"])
+# POPRAWKA NAZEWNICTWA ZAKŁADEK GÓRNYCH
+tab1, tab2 = st.tabs(["🚀 Generator opisów wizyt (Wklej Tekst)", "🎙️ Edytor głosowy opisów wizyt"])
 
 # ==============================================================================
 # 🚀 ZAKŁADKA 1: JEDNO, DUŻE OKNO (STABILNE PRZETWARZANIE TEKSTOWE)
 # ==============================================================================
 with tab1:
-    st.title("🐾 Szybki Generator Protokołów MeatPoint.io")
+    # POPRAWKA NAZEWNICTWA TYTUŁU GŁÓWNEGO W ZAKŁADCE 1
+    st.title("🐾 Generator opisów wizyt")
     st.markdown("Wklej gotową transkrypcję przygotowaną bezpośrednio w Gemini, aby natychmiast zbudować sformatowany dokument Word.")
     
     col1, col2 = st.columns([1, 1], gap="large")
@@ -199,10 +201,12 @@ with tab1:
         transcript = st.text_area("🔊 Wklej tutaj kompletną transkrypcję z rozmowy:", height=580, key="surowy_wklejony_tekst")
         
     with col2:
-        st.subheader("📋 Wynikowy Protokół Wizyty")
+        # POPRAWKA NAZEWNICTWA PODTYTUŁU WYNIKU W ZAKŁADCE 1
+        st.subheader("📋 Opis wizyty")
         LINK_DO_ARKUSZA = "https://docs.google.com/spreadsheets/d/1qgSX_t4_fb36CqtFUluPDKDQILpR9_SLOlYBPTXSTes/edit?usp=sharing"
         
-        if st.button("🚀 Wygeneruj i uzupełnij Protokół Word", type="primary", use_container_width=True):
+        # POPRAWKA NAZEWNICTWA GŁÓWNEGO PRZYCISKU GENEROWANIA W ZAKŁADCE 1
+        if st.button("🚀 Wygeneruj i uzupełnij opisy wizyty w Word", type="primary", use_container_width=True):
             if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz upewnij się, że okno transkrypcji nie jest puste!")
             else:
                 with st.spinner("Analiza kliniczna całego tekstu i dopasowywanie linków..."):
@@ -228,7 +232,7 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.ionnPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
@@ -254,7 +258,8 @@ with tab1:
 # 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW
 # ==============================================================================
 with tab2:
-    st.title("🎙️ Inteligentny Edytor Głosowy Protokółów")
+    # POPRAWKA NAZEWNICTWA TYTUŁU GŁÓWNEGO W ZAKŁADCE 2
+    st.title("🎙️ Edytor głosowy opisów wizyt")
     
     if 'sekcje_dokumentu' not in st.session_state: st.session_state.sekcje_dokumentu = None
     if 'koszyk_nagran' not in st.session_state: st.session_state.koszyk_nagran = {}
@@ -263,7 +268,8 @@ with tab2:
 
     col_top1, col_top2 = st.columns([3, 1])
     with col_top1:
-        u_file = st.file_uploader("📂 Wgraj plik protokołu (.docx):", type=["docx"], key=f"u_{st.session_state.v_key}")
+        # POPRAWKA NAZEWNICTWA POLA PRZESYŁANIA PLIKÓW W ZAKŁADCE 2
+        u_file = st.file_uploader("📂 Wgraj plik opisu (.docx):", type=["docx"], key=f"u_{st.session_state.v_key}")
     with col_top2:
         st.write("</br>", unsafe_allow_html=True)
         if st.button("🔄 Nowy protokół / Reset", type="secondary", use_container_width=True):
