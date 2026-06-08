@@ -2,3 +2,4 @@ google-generativeai
 python-docx
 pandas
 streamlit-mic-recorder
+streamlit
