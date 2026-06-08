@@ -7,7 +7,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
-# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA 1:1 Z DOKUMENTEM ---
+# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA ZGODNIE Z PROWADZONĄ PRAKTYKĄ ---
 STRUKTURA_PROTOKOLU = [
     "Powód konsultacji:", "Aktualne samopoczucie:", "Aktywność:", "Apetyt:", "Pragnienie:",
     "Dotychczasowe żywienie:", "Smaczki i przysmaki:", "Ulubione smaki:",
@@ -52,7 +52,7 @@ TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-    "• Wody\n• Miersa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n• Dodatkowo: \n\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n• Dodatkowo: \n\n"
     "To będzie już kompletna dieta."
@@ -173,7 +173,7 @@ def konwertuj_do_docx(tekst_md):
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 # ==============================================================================
-# 🎨 RESTRYKCYJNA NADPISKA STYLÓW CSS PREMIUM - ROZWIĄZANIE DROPDOWNÓW I PRZYCISKÓW
+# 🎨 RESTRYKCYJNE NADPISANIE CSS - DETALE KONTRASTU, ROZWIJANYCH LIST I MIKROFONU
 # ==============================================================================
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
 
@@ -183,19 +183,19 @@ st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* Usunięcie systemowego błędu napisu i nagłówka */
+        /* 1. Usunięcie systemowego błędu napisu tekstowego w lewym górnym rogu */
         span[data-testid="collapsedControl"], header, .stApp header {
             display: none !important;
         }
         
-        /* Globalna baza i czcionka Poppins */
+        /* 2. Globalna podstawa chmury i czcionka Poppins */
         .stApp, html, body, .main .block-container {
             background-color: #F9F7F2 !important;
         }
         
         [data-testid="stSidebar"], [data-testid="stSidebar"] section {
             background-color: #F3F0E7 !important;
-            border-right: 1px solid #E2E8F0 !important;
+            border-right: 1px solid #CBD5E1 !important;
         }
         
         h1, h2, h3, h4, h5, h6, p, label, li, span, th, td, small {
@@ -203,22 +203,29 @@ st.markdown("""
             font-family: 'Poppins', sans-serif !important;
         }
         
-        /* FIX: Pełna czytelność list rozwijanych (Wybór modelu, Wybór sekcji do edycji) */
-        div[data-baseweb="popover"], div[role="listbox"], ul[role="listbox"], li[role="option"], div[data-baseweb="menu"] {
+        /* 3. PEŁNA KOREKTA I WYCZYSZCZENIE LIST ROZWIJANYCH (Usunięcie czarnych pasków) */
+        div[data-baseweb="popover"], div[role="listbox"], ul[role="listbox"], div[data-baseweb="menu"] {
             background-color: #FFFFFF !important;
             color: #1E293B !important;
+            border: 1px solid #CBD5E1 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
         }
-        li[role="option"] span, div[role="listbox"] div, div[data-baseweb="popover"] div {
+        li[role="option"] {
+            background-color: #FFFFFF !important;
+            color: #1E293B !important;
+            padding: 8px 12px !important;
+        }
+        li[role="option"] span, div[role="listbox"] div {
             color: #1E293B !important;
             font-family: 'Poppins', sans-serif !important;
         }
-        /* Efekt najazdu myszką na element listy rozwijanej */
-        li[role="option"]:hover, li[role="option"][aria-selected="true"] {
-            background-color: #E2E8F0 !important;
+        li[role="option"]:hover {
+            background-color: #F1F5F9 !important;
             color: #4D6C70 !important;
         }
 
-        /* Kontrola nad inputami tekstowymi i bazami selectboxów */
+        /* 4. DOPASOWANIE OBWÓDKI AUTORYZACJI ORAZ OKA W PANELU BOCZNYM */
         .stTextInput input, .stSelectbox div[data-baseweb="select"], .stSelectbox span, .stSelectbox div {
             color: #1E293B !important;
             background-color: #FFFFFF !important;
@@ -228,12 +235,30 @@ st.markdown("""
         .stTextInput input, .stSelectbox div[data-baseweb="select"] {
             border: 2px solid #CBD5E1 !important;
         }
+        /* Usunięcie ciemnego podświetlenia wokół ikony oka */
+        .stTextInput div[data-baseweb="input"] {
+            background-color: #FFFFFF !important;
+            border-radius: 12px !important;
+        }
         .stTextInput button {
             color: #4D6C70 !important;
             background-color: transparent !important;
+            border: none !important;
         }
         
-        /* Uploader plików */
+        /* 5. FIX MODUŁU AUDIO I MIKROFONU (Koniec z czarnym paskiem i rozsypanym tekstem) */
+        div[class*="stMarkdown"] iframe, div.element-container iframe {
+            background-color: transparent !important;
+        }
+        /* Dopasowanie struktury paska mic_recorder */
+        div[data-testid="stVerticalBlock"] div[style*="flex-direction: column"] button {
+            background-color: #FFFFFF !important;
+            color: #1E293B !important;
+            border: 2px solid #CBD5E1 !important;
+            border-radius: 12px !important;
+        }
+        
+        /* Uploader plików (Zabezpieczenie przed czarnym tłem) */
         [data-testid="stFileUploader"], [data-testid="stFileUploader"] section {
             background-color: #FFFFFF !important;
             border-radius: 12px !important;
@@ -241,19 +266,16 @@ st.markdown("""
         [data-testid="stFileUploader"] {
             border: 2px dashed #4D6C70 !important;
         }
-        [data-testid="stFileUploader"] section div, [data-testid="stFileUploader"] span, [data-testid="stFileUploader"] small, [data-testid="stFileUploader"] button {
+        [data-testid="stFileUploader"] section div, 
+        [data-testid="stFileUploader"] span, 
+        [data-testid="stFileUploader"] small, 
+        [data-testid="stFileUploader"] button,
+        [data-testid="stFileUploader"] div {
             color: #334155 !important;
             font-family: 'Poppins', sans-serif !important;
         }
         
-        /* Alerty, statusy, komunikaty informacyjne */
-        div[data-testid="stAlert"], div[data-testid="stAlert"] div {
-            background-color: #FFFFFF !important;
-            color: #1E293B !important;
-            border-radius: 12px !important;
-        }
-        
-        /* Obszar roboczy pól text_area */
+        /* Obszar roboczy pól tekstowych */
         .stTextArea textarea {
             background-color: #FFFFFF !important;
             border: 2px solid #CBD5E1 !important;
@@ -261,17 +283,12 @@ st.markdown("""
             color: #1E293B !important;
             font-family: 'Poppins', sans-serif !important;
         }
-        .stTextArea textarea:focus {
-            border-color: #4D6C70 !important;
-            box-shadow: 0 0 0 2px rgba(77, 108, 112, 0.2) !important;
-        }
         
         /* Zakładki górne */
         button[data-baseweb="tab"] {
             color: #64748B !important;
             font-weight: 500 !important;
             font-family: 'Poppins', sans-serif !important;
-            background-color: transparent !important;
         }
         button[data-baseweb="tab"][aria-selected="true"] {
             color: #4D6C70 !important;
@@ -279,7 +296,7 @@ st.markdown("""
             border-bottom: 3px solid #4D6C70 !important;
         }
         
-        /* UNIFIKACJA PRZYCISKÓW: Prestiżowy gradient butelkowy dla każdego typu przycisku w aplikacji */
+        /* Unifikacja i butelkowy gradient przycisków */
         div.stButton > button, div[data-testid="stDownloadButton"] > button {
             background: linear-gradient(135deg, #4D6C70 0%, #354B4E 100%) !important;
             color: #FFFFFF !important;
@@ -342,7 +359,7 @@ with tab1:
                             system_instruction=(
                                 "Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. "
                                 "Pisz WYŁĄCZNIE absolutną prawdę na podstawie dostarczonego pliku tekstowego transkrypcji. "
-                                "ZAKAZ zmyślania jakichkolwiek faktów, wyników badań, dawek leków czy preparatów celowanych. "
+                                "ZAKAZ zmyślania jakichkolwiek faktów,wyników badań, dawek leków czy preparatów celowanych. "
                                 "ZAKAZ samodzielnego wyliczania wartości biochemicznych karm, jeśli nie zostały podyktowane słowo w słowo. "
                                 "Jeśli chcesz coś wyróżnić medycznie (np. lek, dawkę lub kluczowy wniosek), używaj podwójnych gwiazdek **tekst**."
                                 "Jeśli brakuje jakichkolwiek danych dla danej etykiety lub sekcji, bezwarunkowo i sztywno wstaw fragment [BRAK INFORMACJI]."
@@ -367,7 +384,7 @@ with tab1:
                                 prefix = "" if naglowek.startswith("###") else "## "
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Uzupełnij precyzyjnymi faktami medycznymi z transkrypcji.\n"
 
-                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
+                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓZ Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu wynikowego:", value=res.text, height=350, key="podglad_gen")
