@@ -173,20 +173,19 @@ def konwertuj_do_docx(tekst_md):
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 # ==============================================================================
-# 🎨 RESTRYKCYJNY MASTER CSS - CAŁKOWITA NADPISKA DLA POPRAWY INTERFEJSU WIZUALNEGO
+# 🎨 PROFESJONALNY KOD CSS - LIKWIDACJA CZARNYCH ROGÓW I ODCIĘCIE OBUDOWY PLIKU
 # ==============================================================================
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
 
 st.markdown("""
     <style>
-        /* Imporowanie czcionki Poppins i całkowite wycięcie elementów systemowych */
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         
         span[data-testid="collapsedControl"], header, .stApp header {
             display: none !important;
         }
         
-        /* Globalne nadpisanie tła i czcionki */
+        /* Baza i struktura czcionki */
         .stApp, html, body, .main .block-container {
             background-color: #F9F7F2 !important;
             font-family: 'Poppins', sans-serif !important;
@@ -202,22 +201,13 @@ st.markdown("""
             font-family: 'Poppins', sans-serif !important;
         }
         
-        /* 1. BEZWZGLĘDNA NAPRAWA WYBORU MODELU I SELECTBOXÓW (Koniec z czarnym tłem) */
-        div[data-testid="stSelectbox"], .stSelectbox, .stSelectbox div, .stSelectbox span {
-            background-color: #FFFFFF !important;
-            color: #1E293B !important;
-            border-radius: 12px !important;
-        }
-        .stSelectbox div[data-baseweb="select"] {
-            border: 2px solid #CBD5E1 !important;
-            background-color: #FFFFFF !important;
-        }
-        
-        /* Popovery i rozwijane menu (Unifikacja bazy danych) */
+        /* 1. USUNIĘCIE ZAOKRĄGLEŃ I CZARNYCH ROGÓW / CIENI Z LIST ROZWIJANYCH */
         div[data-baseweb="popover"], div[role="listbox"], ul[role="listbox"], div[data-baseweb="menu"], li[role="option"] {
             background-color: #FFFFFF !important;
             color: #1E293B !important;
-            border-radius: 12px !important;
+            border-radius: 0px !important; /* Proste krawędzie likwidują czarne rogi chmury */
+            box-shadow: none !important;    /* Całkowite odcięcie systemowego cienia Dark Mode */
+            border: 2px solid #CBD5E1 !important;
         }
         li[role="option"] *, div[role="listbox"] div {
             color: #1E293B !important;
@@ -227,7 +217,29 @@ st.markdown("""
             color: #4D6C70 !important;
         }
 
-        /* 2. WYRAŹNY KONTRAST TEKSTU W POLU WYŁĄCZONYM (st.text_area disabled) */
+        /* 2. WYRAŹNA, ESTETYCZNA OBWÓDKA WGRANEGO PLIKU W UPLOADERZE */
+        [data-testid="stFileUploaderCard"] {
+            background-color: #FFFFFF !important;
+            border: 2px solid #CBD5E1 !important; /* Dodanie wyraźnej krawędzi przycisku pliku */
+            border-radius: 8px !important;
+            padding: 4px 12px !important;
+        }
+        [data-testid="stFileUploader"], [data-testid="stFileUploader"] section {
+            background-color: #FFFFFF !important;
+        }
+        [data-testid="stFileUploader"] {
+            border: 2px dashed #4D6C70 !important;
+            border-radius: 12px !important;
+        }
+        [data-testid="stFileUploader"] * {
+            color: #334155 !important;
+            font-family: 'Poppins', sans-serif !important;
+        }
+        [data-testid="stFileUploader"] button span {
+            color: #FFFFFF !important;
+        }
+
+        /* 3. PEŁNY KONTRAST DLA WYŁĄCZONEGO POLA TEKSTOWEGO */
         .stTextArea textarea, .stTextArea textarea:disabled, .stTextArea textarea[disabled] {
             background-color: #FFFFFF !important;
             color: #1E293B !important;
@@ -238,32 +250,19 @@ st.markdown("""
             font-family: 'Poppins', sans-serif !important;
         }
         
-        /* 3. PEŁNE OCZYSZCZENIE UPLOADERA PLIKÓW (Usunięcie nakładających się czarnych elementów) */
-        [data-testid="stFileUploader"], [data-testid="stFileUploader"] * {
-            background-color: #FFFFFF !important;
-            color: #334155 !important;
-            font-family: 'Poppins', sans-serif !important;
-        }
-        [data-testid="stFileUploader"] {
-            border: 2px dashed #4D6C70 !important;
-            border-radius: 12px !important;
-        }
-        [data-testid="stFileUploader"] button span {
-            color: #FFFFFF !important; /* Biały napis na przycisku uploader */
-        }
-        
-        /* 4. ELIMINACJA CZARNEGO BLOKU MIKROFONU (mic_recorder) */
+        /* Wycięcie tła z paska mikrofonu */
         div.element-container iframe, iframe, .stMarkdown + div {
             background-color: transparent !important;
             border: none !important;
         }
         
-        /* Stylizacja pola wprowadzania hasła / API */
-        .stTextInput input {
+        /* Autoryzacja i selektory wejściowe */
+        .stTextInput input, .stSelectbox div[data-baseweb="select"] {
             color: #1E293B !important;
             background-color: #FFFFFF !important;
-            border: 2px solid #CBD5E1 !important;
             border-radius: 12px !important;
+            border: 2px solid #CBD5E1 !important;
+            font-family: 'Poppins', sans-serif !important;
         }
         div[data-baseweb="input"] {
             background-color: #FFFFFF !important;
@@ -275,7 +274,7 @@ st.markdown("""
             background-color: transparent !important;
         }
         
-        /* Zakładki menu górnego */
+        /* Menu górne zakładek */
         button[data-baseweb="tab"] {
             color: #64748B !important;
             font-weight: 500 !important;
@@ -288,7 +287,7 @@ st.markdown("""
             border-bottom: 3px solid #4D6C70 !important;
         }
         
-        /* Unifikacja i butelkowy gradient przycisków akcji */
+        /* Gradientowe przyciski systemowe */
         div.stButton > button, div[data-testid="stDownloadButton"] > button {
             background: linear-gradient(135deg, #4D6C70 0%, #354B4E 100%) !important;
             color: #FFFFFF !important;
@@ -376,7 +375,7 @@ with tab1:
                                 prefix = "" if naglowek.startswith("###") else "## "
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Uzupełnij precyzyjnymi faktami medycznymi z transkrypcji.\n"
 
-                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracra: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
+                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu wynikowego:", value=res.text, height=350, key="podglad_gen")
