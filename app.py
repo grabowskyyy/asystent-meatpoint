@@ -7,7 +7,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
-# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA 1:1 Z DOKUMENTEM ANI ---
+# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA ZGODNIE Z PROWADZONĄ PRAKTYKĄ ---
 STRUKTURA_PROTOKOLU = [
     "Powód konsultacji:", "Aktualne samopoczucie:", "Aktywność:", "Apetyt:", "Pragnienie:",
     "Dotychczasowe żywienie:", "Smaczki i przysmaki:", "Ulubione smaki:",
@@ -28,7 +28,7 @@ TEKST_TYNDALIZACJA_STALY = (
     "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
     "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
-    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozicnn"
+    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
     "Dodatkowo przygotowaliśmy dla Państwa praktyczny poradnik w formie wideo na platformie YouTube, "
     "gdzie pokazujemy cały proces krok po kroku: https://www.youtube.com/watch?v=tyfT3kmq3ME"
 )
@@ -77,23 +77,19 @@ def add_hyperlink(p, url, text):
     r_id = part.relate_to(url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True)
     hl = OxmlElement('w:hyperlink'); hl.set(qn('r:id'), r_id)
     nr = OxmlElement('w:r'); rPr = OxmlElement('w:rPr')
-    c = OxmlElement('w:color'); c.set(qn('w:val'), '0563C1'); rPr.append(c)
+    c = OxmlElement('w:color'); c.set(qn('w:val'), '4D6C70'); rPr.append(c) # Dostosowanie koloru linku w Wordzie pod styl
     u = OxmlElement('w:u'); u.set(qn('w:val'), 'single'); rPr.append(u)
     nr.append(rPr); tn = OxmlElement('w:t'); tn.text = text; nr.append(tn); hl.append(nr); p._p.append(hl)
     return hl
 
 def parsuj_i_formatuj_tekst(p, tekst):
-    # NAPRAWA: Bezpieczne i szybkie wykrywanie alertów bez użycia Regexa
     parts = tekst.split('[BRAK INFORMACJI]')
     for i, part in enumerate(parts):
         if part:
-            # Szybki podział tekstowy na bloki z gwiazdkami (co drugi element jest pogrubiony)
             sub_segs = part.split('**')
             for idx, sub_seg in enumerate(sub_segs):
                 if not sub_seg: continue
                 czy_pogrubiony = (idx % 2 == 1)
-                
-                # Wyciąganie linków z danego segmentu
                 url_segs = re.split(r'(https?://[^\s]+)', sub_seg)
                 for u_idx, u_seg in enumerate(url_segs):
                     if u_idx % 2 == 1:
@@ -120,7 +116,7 @@ def konwertuj_do_docx(tekst_md):
     
     pk = kl.paragraphs[0]; pk.paragraph_format.space_after = Pt(0)
     pk.add_run("Anna Michalska\n").bold = True; pk.runs[-1].font.size = Pt(11)
-    ps = pk.add_run("Dietetyka Psów i Kotów\n"); ps.font.size, ps.font.color.rgb = Pt(9), RGBColor(100, 116, 139)
+    ps = pk.add_run("Dietetyka Psów i Kotów\n"); ps.font.size, ps.font.color.rgb = Pt(9), RGBColor(77, 108, 112)
     pd_t = pk.add_run("miesnepsokotki@gmail.com  |  https://www.facebook.com/meatpoint.io"); pd_t.font.size, pd_t.font.color.rgb = Pt(8.5), RGBColor(100, 116, 139)
     
     if os.path.exists("logo.png"):
@@ -148,7 +144,7 @@ def konwertuj_do_docx(tekst_md):
         if l_s.startswith('## '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
             czysty_h2 = l_s.replace('## ', '').replace('**', '')
-            r = p.add_run(czysty_h2); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
+            r = p.add_run(czysty_h2); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(77, 108, 112) # Zmiana na kolor przewodzący marki
         elif l_s.startswith('### '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(8), Pt(2)
             czysty_h3 = l_s.replace('### ', '').replace('**', '')
@@ -177,21 +173,86 @@ def konwertuj_do_docx(tekst_md):
             
     b = BytesIO(); doc.save(b); return b.getvalue()
 
+# ==============================================================================
+# 🎨 INTEGRACJA BRANDINGU WIZUALNEGO MEATPOINT (#F9F7F2, #4D6C70)
+# ==============================================================================
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
+
+st.markdown("""
+    <style>
+        /* Tło głównej strony oraz bocznego panelu */
+        .stApp, [data-testid="stSidebar"] {
+            background-color: #F9F7F2 !important;
+        }
+        
+        /* Kolorystyka i czytelność tekstów głównych */
+        h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, span {
+            color: #1E293B !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        
+        /* Stylizacja zakładek (Tabs) */
+        button[data-baseweb="tab"] {
+            color: #64748B !important;
+            font-weight: 600 !important;
+        }
+        button[data-baseweb="tab"][aria-selected="true"] {
+            color: #4D6C70 !important;
+            border-bottom-color: #4D6C70 !important;
+        }
+        
+        /* Zaokrąglenia i obramowania pól tekstowych text_area */
+        .stTextArea textarea {
+            background-color: #FFFFFF !important;
+            border: 1px solid #CBD5E1 !important;
+            border-radius: 12px !important;
+            color: #1E293B !important;
+        }
+        .stTextArea textarea:focus {
+            border-color: #4D6C70 !important;
+            box-shadow: 0 0 0 1px #4D6C70 !important;
+        }
+        
+        /* Zaawansowana stylizacja przycisków Streamlit (Główny akcent marki) */
+        div.stButton > button {
+            background-color: #4D6C70 !important;
+            color: #FFFFFF !important;
+            border-radius: 12px !important;
+            border: none !important;
+            font-weight: 600 !important;
+            padding: 0.5rem 1.5rem !important;
+            transition: all 0.3s ease !important;
+        }
+        div.stButton > button:hover {
+            background-color: #3D5659 !important;
+            color: #FFFFFF !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        /* Stylizacja pól przesyłania plików */
+        [data-testid="stFileUploader"] {
+            background-color: #FFFFFF !important;
+            border: 1px dashed #4D6C70 !important;
+            border-radius: 12px !important;
+            padding: 10px !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 with st.sidebar:
     st.header("🔑 Autoryzacja")
     api_key = st.text_input("Klucz API Gemini", type="password")
     model_choice = st.selectbox("Wybierz model", ["gemini-3.5-flash", "gemini-3.1-pro"])
 
-tab1, tab2 = st.tabs(["🚀 Generator Protokołów (Wklej Tekst)", "🎙️ Głosowy Edytor (Voice Editor)"])
+# Aktualizacja nazw nagłówków zakładek 1:1 z wytycznymi
+tab1, tab2 = st.tabs(["🐾 Generator opisów wizyt", "🎙️ Edytor głosowy opisów wizyt"])
 
 # ==============================================================================
-# 🚀 ZAKŁADKA 1: JEDNO, DUŻE OKNO (STABILNE PRZETWARZANIE TEKSTOWE)
+# 🚀 ZAKŁADKA 1: GENERATOR OPISÓW WIZYT
 # ==============================================================================
 with tab1:
-    st.title("🐾 Szybki Generator Protokołów MeatPoint.io")
-    st.markdown("Wklej gotową transkrypcję przygotowaną bezpośrednio w Gemini, aby natychmiast zbudować sformatowany dokument Word.")
+    st.title("🐾 Generator opisów wizyt")
+    st.markdown("Wklej przygotowaną transkrypcję z rozmowy, aby automatycznie zbudować pedantycznie sformatowany dokument Word.")
     
     col1, col2 = st.columns([1, 1], gap="large")
     
@@ -228,7 +289,7 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.ionnPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
@@ -251,10 +312,10 @@ with tab1:
                     except Exception as e: st.error(f"🚨 Błąd generatora: {e}")
 
 # ==============================================================================
-# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW
+# 🎙️ ZAKŁADKA 2: EDYTOR GŁOSOWY OPISÓW WIZYT
 # ==============================================================================
 with tab2:
-    st.title("🎙️ Inteligentny Edytor Głosowy Protokółów")
+    st.title("🎙️ Edytor głosowy opisów wizyt")
     
     if 'sekcje_dokumentu' not in st.session_state: st.session_state.sekcje_dokumentu = None
     if 'koszyk_nagran' not in st.session_state: st.session_state.koszyk_nagran = {}
@@ -266,7 +327,7 @@ with tab2:
         u_file = st.file_uploader("📂 Wgraj plik protokołu (.docx):", type=["docx"], key=f"u_{st.session_state.v_key}")
     with col_top2:
         st.write("</br>", unsafe_allow_html=True)
-        if st.button("🔄 Nowy protokół / Reset", type="secondary", use_container_width=True):
+        if st.button("🔄 Nowy opis / Reset", type="secondary", use_container_width=True):
             st.session_state.sekcje_dokumentu = None
             st.session_state.koszyk_nagran = {}
             st.session_state.klucze_mikrofonow = {}
