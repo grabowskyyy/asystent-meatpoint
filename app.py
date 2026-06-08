@@ -27,7 +27,7 @@ TEKST_TYNDALIZACJA_STALY = (
     "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
     "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
-    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozicnn"
+    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
     "Dodatkowo przygotowaliśmy dla Państwa praktyczny poradnik w formie wideo na platformie YouTube, "
     "gdzie pokazujemy cały proces krok po kroku: https://www.youtube.com/watch?v=tyfT3kmq3ME"
 )
@@ -36,7 +36,7 @@ TEKST_INNE_SMACZKI_STALY = (
     "Wprowadzając do codziennej rutyny jakiekolwiek inne smaczki komercyjne, należy bezwzględnie "
     "pamiętać o kontrolowaniu ich kaloryczności, aby nie zaburzyć bilansu nowej diety pacjenta.\n\n"
     "Szczegółowy poradnik oraz instrukcję, jak samodzielnie wyliczyć kaloryczność dowolnego produktu komercyjnego "
-    "na podstawie danych z etykiety, znajdą Państwo w naszym artykule: "
+    "na podstawie danych z etykiety, znają Państwo w naszym artykule: "
     "https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow"
 )
 
@@ -173,7 +173,7 @@ def konwertuj_do_docx(tekst_md):
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 # ==============================================================================
-# 🎨 RESTRYKCYJNY I TERMINALNY ARKUSZ STYLÓW CSS (NADPNIĘCIE ELEMENTÓW OPORNYCH)
+# 🎨 RESTRYKCYJNY ARCHITEKTONICZNY KOD CSS - PEŁNY KONTRAST PREMIUM
 # ==============================================================================
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
 
@@ -183,12 +183,12 @@ st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* Całkowite odcięcie systemowego błędu w lewym rogu oraz paska header */
+        /* Całkowite odcięcie systemowego napisu w lewym górnym rogu oraz paska nagłówka */
         span[data-testid="collapsedControl"], header, .stApp header {
             display: none !important;
         }
         
-        /* Wymuszenie tła premium i czcionki Poppins */
+        /* Wymuszenie tła premium i czcionki Poppins na całej przestrzeni */
         .stApp, html, body, .main .block-container {
             background-color: #F9F7F2 !important;
         }
@@ -203,7 +203,49 @@ st.markdown("""
             font-family: 'Poppins', sans-serif !important;
         }
         
-        /* 1. BEZWZGLĘDNA NAPRAWA PANELU POPOVER I ROZWIJANYCH LIST (Usunięcie czarnego boku) */
+        /* 1. NAPRAWA NIEWIDOCZNEGO TEKSTU W POLU WYŁĄCZONYM (disabled text_area) */
+        .stTextArea textarea, .stTextArea textarea[disabled], textarea:disabled {
+            background-color: #FFFFFF !important;
+            color: #1E293B !important;
+            -webkit-text-fill-color: #1E293B !important; /* Wymuszenie koloru na silnikach Safari/Chrome */
+            opacity: 1 !important;
+            border: 2px solid #CBD5E1 !important;
+            border-radius: 12px !important;
+            font-family: 'Poppins', sans-serif !important;
+        }
+        .stTextArea textarea:focus {
+            border-color: #4D6C70 !important;
+            box-shadow: 0 0 0 2px rgba(77, 108, 112, 0.2) !important;
+        }
+
+        /* 2. ABSOLUTNE OCZYSZCZENIE UPLOADERA PLIKÓW (Koniec z czarnym paskiem/tłem wewnątrz) */
+        [data-testid="stFileUploader"], 
+        [data-testid="stFileUploader"] section, 
+        [data-testid="stFileUploader"] div,
+        [data-testid="stFileUploader"] dropzone {
+            background-color: #FFFFFF !important;
+            color: #1E293B !important;
+        }
+        [data-testid="stFileUploader"] {
+            border: 2px dashed #4D6C70 !important;
+            border-radius: 12px !important;
+        }
+        [data-testid="stFileUploader"] * {
+            color: #334155 !important;
+            font-family: 'Poppins', sans-serif !important;
+        }
+        
+        /* 3. LIKWIDACJA CZARNEGO PASKA MIKROFONU (st.markdown / mic_recorder wrapper) */
+        div.element-container object, div.element-container iframe, iframe {
+            background-color: transparent !important;
+            color-scheme: light !important;
+        }
+        div[style*="background-color: rgb(240, 242, 246)"], div[style*="background-color: black"], .stMarkdown + div {
+            background-color: transparent !important;
+            border: none !important;
+        }
+        
+        /* 4. NAPRAWA LIST ROZWIJANYCH I WYBORU MODELU (Usunięcie bocznych suwaków i cieni) */
         div[data-baseweb="popover"], div[role="listbox"], ul[role="listbox"], div[data-baseweb="menu"] {
             background-color: #FFFFFF !important;
             color: #1E293B !important;
@@ -211,17 +253,10 @@ st.markdown("""
             border-radius: 12px !important;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
         }
-        /* Wycięcie brzydkich suwaków tła Streamlita */
-        div[role="listbox"]::-webkit-scrollbar {
-            width: 6px !important;
-        }
-        div[role="listbox"]::-webkit-scrollbar-thumb {
-            background-color: #CBD5E1 !important;
-            border-radius: 4px !important;
-        }
         li[role="option"] {
             background-color: #FFFFFF !important;
             color: #1E293B !important;
+            padding: 8px 12px !important;
         }
         li[role="option"] span, div[role="listbox"] div {
             color: #1E293B !important;
@@ -232,15 +267,13 @@ st.markdown("""
             color: #4D6C70 !important;
         }
 
-        /* 2. WYCZYSZCZENIE INPUTÓW ORAZ PRZYCISKU OKA W AUTORYZACJI */
-        .stTextInput input, .stSelectbox div[data-baseweb="select"], .stSelectbox span, .stSelectbox div {
+        /* Kontrola nad inputami i usuwanie ciemnych ramek w polu haseł */
+        .stTextInput input, .stSelectbox div[data-baseweb="select"] {
             color: #1E293B !important;
             background-color: #FFFFFF !important;
             border-radius: 12px !important;
-            font-family: 'Poppins', sans-serif !important;
-        }
-        .stTextInput input, .stSelectbox div[data-baseweb="select"] {
             border: 2px solid #CBD5E1 !important;
+            font-family: 'Poppins', sans-serif !important;
         }
         div[data-baseweb="input"] {
             background-color: #FFFFFF !important;
@@ -252,48 +285,14 @@ st.markdown("""
             border: none !important;
         }
         
-        /* 3. CAŁKOWITY REBUILD MODUŁU MIKROFONU ( mic_recorder ) - Koniec z czarną belką */
-        div.element-container iframe, iframe {
-            background-color: transparent !important;
-            color-scheme: light !important;
-        }
-        /* Wymuszenie stylu na przycisku nagrywania wewnątrz struktur */
-        button[id*="record"], .stApp button {
-            font-family: 'Poppins', sans-serif !important;
-        }
-        /* Uniwersalny chwytak dla elementu mikrofonu, jeśli renderuje się poza standardowym DOM */
-        div[style*="background-color: rgb(240, 242, 246)"], div[style*="background-color: black"], .stMarkdown + div {
-            background-color: transparent !important;
-            border: none !important;
-        }
-        
-        /* 4. TOTALNA NAPRAWA PLIKÓW I UPLOADERA (Usunięcie nakładających się czarnych napisów) */
-        [data-testid="stFileUploader"], [data-testid="stFileUploader"] section {
+        /* Statusy systemowe */
+        div[data-testid="stAlert"], div[data-testid="stAlert"] div {
             background-color: #FFFFFF !important;
-            border-radius: 12px !important;
-        }
-        [data-testid="stFileUploader"] {
-            border: 2px dashed #4D6C70 !important;
-        }
-        [data-testid="stFileUploader"] * {
-            color: #334155 !important;
-            font-family: 'Poppins', sans-serif !important;
-        }
-        /* Schowanie brzydkich, zduplikowanych, czarnych warstw pod spodem */
-        [data-testid="stFileUploader"] dropzone div {
-            color: #334155 !important;
-        }
-        
-        /* Pola robocze tekstowe */
-        .stTextArea textarea {
-            background-color: #FFFFFF !important;
-            border: 2px solid #CBD5E1 !important;
-            border-radius: 12px !important;
             color: #1E293B !important;
-            font-family: 'Poppins', sans-serif !important;
+            border-radius: 12px !important;
         }
         
-        /* Projekt górnych zakładek */
+        /* Zakładki menu */
         button[data-baseweb="tab"] {
             color: #64748B !important;
             font-weight: 500 !important;
@@ -305,7 +304,7 @@ st.markdown("""
             border-bottom: 3px solid #4D6C70 !important;
         }
         
-        /* Butelkowy gradient premium dla przycisków */
+        /* Unifikacja przycisków w spójny gradient butelkowy */
         div.stButton > button, div[data-testid="stDownloadButton"] > button {
             background: linear-gradient(135deg, #4D6C70 0%, #354B4E 100%) !important;
             color: #FFFFFF !important;
@@ -378,7 +377,7 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.ionnPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
@@ -434,6 +433,8 @@ with tab2:
         with col_ed1:
             st.markdown("### 1️⃣ Wybór obszaru do korekty")
             wybrana_sekcja = st.selectbox("Wybierz nagłówek, do którego chcesz dodać nagranie:", list(st.session_state.sekcje_dokumentu.keys()), key="sel_voice")
+            
+            # WYRAŹNY KONTRAST TEKSTU W POLU DIZABLOWANYM
             st.text_area("📄 Aktualna treść sekcji:", value=st.session_state.sekcje_dokumentu[wybrana_sekcja], height=220, disabled=True, key=f"t_{wybrana_sekcja}")
             
             if wybrana_sekcja not in st.session_state.klucze_mikrofonow:
