@@ -7,7 +7,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
-# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA 1:1 Z DOKUMENTEM ANI ---
+# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA 1:1 Z DOKUMENTEM ---
 STRUKTURA_PROTOKOLU = [
     "Powód konsultacji:", "Aktualne samopoczucie:", "Aktywność:", "Apetyt:", "Pragnienie:",
     "Dotychczasowe żywienie:", "Smaczki i przysmaki:", "Ulubione smaki:",
@@ -47,8 +47,6 @@ TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Dodatkowo: \n\n"
-    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
@@ -173,19 +171,22 @@ def konwertuj_do_docx(tekst_md):
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 # ==============================================================================
-# 🎨 PROFESJONALNY KOD CSS - LIKWIDACJA CZARNYCH ROGÓW I ODCIĘCIE OBUDOWY PLIKU
+# 🎨 GŁÓWNY ARCHITEKTONICZNY CSS - NADPISYWANIE KOMPONENTÓW WEWNĘTRZNYCH REACTA
 # ==============================================================================
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
 
 st.markdown("""
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        
+        /* Ukrycie wadliwych elementów systemowych na górze strony */
         span[data-testid="collapsedControl"], header, .stApp header {
             display: none !important;
         }
         
-        /* Baza i struktura czcionki */
+        /* Tło aplikacji */
         .stApp, html, body, .main .block-container {
             background-color: #F9F7F2 !important;
             font-family: 'Poppins', sans-serif !important;
@@ -200,46 +201,50 @@ st.markdown("""
             color: #1E293B !important;
             font-family: 'Poppins', sans-serif !important;
         }
-        
-        /* 1. USUNIĘCIE ZAOKRĄGLEŃ I CZARNYCH ROGÓW / CIENI Z LIST ROZWIJANYCH */
-        div[data-baseweb="popover"], div[role="listbox"], ul[role="listbox"], div[data-baseweb="menu"], li[role="option"] {
+
+        /* 1. LIKWIDACJA CZARNEGO TŁA W SELECTBOX I INPUTACH (Autoryzacja i wybór modelu) */
+        div[data-baseweb="select"] > div, 
+        div[data-baseweb="input"] > div,
+        div[data-baseweb="base-input"],
+        .stTextInput input {
             background-color: #FFFFFF !important;
             color: #1E293B !important;
-            border-radius: 0px !important; /* Proste krawędzie likwidują czarne rogi chmury */
-            box-shadow: none !important;    /* Całkowite odcięcie systemowego cienia Dark Mode */
-            border: 2px solid #CBD5E1 !important;
+            border-radius: 8px !important;
+            border: 1px solid #CBD5E1 !important;
         }
-        li[role="option"] *, div[role="listbox"] div {
+        div[data-baseweb="select"] span {
             color: #1E293B !important;
         }
-        li[role="option"]:hover {
-            background-color: #F1F5F9 !important;
+        
+        /* Naprawa przycisku "oka" w haśle */
+        div[data-baseweb="input"] button {
+            background-color: transparent !important;
             color: #4D6C70 !important;
         }
 
-        /* 2. WYRAŹNA, ESTETYCZNA OBWÓDKA WGRANEGO PLIKU W UPLOADERZE */
-        [data-testid="stFileUploaderCard"] {
+        /* 2. NAPRAWA ROZJECHANEGO, CZARNEGO PRZYCISKU W UPLOADERZE */
+        [data-testid="stFileUploadDropzone"] {
             background-color: #FFFFFF !important;
-            border: 2px solid #CBD5E1 !important; /* Dodanie wyraźnej krawędzi przycisku pliku */
-            border-radius: 8px !important;
-            padding: 4px 12px !important;
-        }
-        [data-testid="stFileUploader"], [data-testid="stFileUploader"] section {
-            background-color: #FFFFFF !important;
-        }
-        [data-testid="stFileUploader"] {
             border: 2px dashed #4D6C70 !important;
             border-radius: 12px !important;
         }
-        [data-testid="stFileUploader"] * {
-            color: #334155 !important;
+        [data-testid="stFileUploadDropzone"] button {
+            background-color: #F1F5F9 !important;
+            color: #1E293B !important;
+            border: 1px solid #CBD5E1 !important;
+            border-radius: 8px !important;
             font-family: 'Poppins', sans-serif !important;
+            font-weight: 500 !important;
+            padding: 4px 16px !important;
         }
-        [data-testid="stFileUploader"] button span {
-            color: #FFFFFF !important;
+        [data-testid="stFileUploadDropzone"] button:hover {
+            background-color: #E2E8F0 !important;
+        }
+        [data-testid="stFileUploadDropzone"] * {
+            color: #334155 !important;
         }
 
-        /* 3. PEŁNY KONTRAST DLA WYŁĄCZONEGO POLA TEKSTOWEGO */
+        /* 3. PEŁNY KONTRAST DLA ZABLOKOWANEGO POLA TEKSTOWEGO (Aktualna treść sekcji) */
         .stTextArea textarea, .stTextArea textarea:disabled, .stTextArea textarea[disabled] {
             background-color: #FFFFFF !important;
             color: #1E293B !important;
@@ -249,36 +254,29 @@ st.markdown("""
             border-radius: 12px !important;
             font-family: 'Poppins', sans-serif !important;
         }
-        
-        /* Wycięcie tła z paska mikrofonu */
+
+        /* 4. CZYSZCZENIE LIST ROZWIJANYCH (Usunięcie czarnych kątów) */
+        div[data-baseweb="popover"], div[role="listbox"], ul[role="listbox"], li[role="option"] {
+            background-color: #FFFFFF !important;
+            color: #1E293B !important;
+            border-radius: 0px !important;
+            box-shadow: none !important;
+        }
+        li[role="option"]:hover {
+            background-color: #F1F5F9 !important;
+            color: #4D6C70 !important;
+        }
+
+        /* 5. ELIMINACJA TŁA MIKROFONU (Usunięcie czarnego paska) */
         div.element-container iframe, iframe, .stMarkdown + div {
             background-color: transparent !important;
             border: none !important;
         }
-        
-        /* Autoryzacja i selektory wejściowe */
-        .stTextInput input, .stSelectbox div[data-baseweb="select"] {
-            color: #1E293B !important;
-            background-color: #FFFFFF !important;
-            border-radius: 12px !important;
-            border: 2px solid #CBD5E1 !important;
-            font-family: 'Poppins', sans-serif !important;
-        }
-        div[data-baseweb="input"] {
-            background-color: #FFFFFF !important;
-            border: none !important;
-            border-radius: 12px !important;
-        }
-        .stTextInput button {
-            color: #4D6C70 !important;
-            background-color: transparent !important;
-        }
-        
-        /* Menu górne zakładek */
+
+        /* Zakładki górne (Nawigacja) */
         button[data-baseweb="tab"] {
             color: #64748B !important;
             font-weight: 500 !important;
-            font-family: 'Poppins', sans-serif !important;
             background-color: transparent !important;
         }
         button[data-baseweb="tab"][aria-selected="true"] {
@@ -287,8 +285,8 @@ st.markdown("""
             border-bottom: 3px solid #4D6C70 !important;
         }
         
-        /* Gradientowe przyciski systemowe */
-        div.stButton > button, div[data-testid="stDownloadButton"] > button {
+        /* Główne przyciski akcji (Wygeneruj / Pobierz) */
+        div.stButton > button[key="btn_gen_tab1"], div[data-testid="stDownloadButton"] > button {
             background: linear-gradient(135deg, #4D6C70 0%, #354B4E 100%) !important;
             color: #FFFFFF !important;
             border-radius: 12px !important;
@@ -302,7 +300,6 @@ st.markdown("""
             width: 100% !important;
         }
         div.stButton > button:hover, div[data-testid="stDownloadButton"] > button:hover {
-            box-shadow: 0 8px 16px rgba(77, 108, 112, 0.4) !important;
             transform: translateY(-1px) !important;
             filter: brightness(1.1) !important;
         }
