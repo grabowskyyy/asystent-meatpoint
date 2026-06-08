@@ -7,7 +7,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
-# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA 1:1 Z DOKUMENTEM ---
+# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA 1:1 Z DOKUMENTEM ANI ---
 STRUKTURA_PROTOKOLU = [
     "Powód konsultacji:", "Aktualne samopoczucie:", "Aktywność:", "Apetyt:", "Pragnienie:",
     "Dotychczasowe żywienie:", "Smaczki i przysmaki:", "Ulubione smaki:",
@@ -20,6 +20,7 @@ STRUKTURA_PROTOKOLU = [
     "Badania kontrolne:", "Załączniki:"
 ]
 
+# Stałe bloki edukacyjne z właściwymi, działającymi linkami MeatPoint
 TEKST_TYNDALIZACJA_STALY = (
     "Jeżeli robią Państwo dietę na dłużej niż 5-6 dni (mowa o diecie surowej) i chcą Państwo "
     "ją bezpiecznie przechowywać w słoiczkach w lodówce (bez zamrażania) LUB przygotowują Państwo "
@@ -48,6 +49,8 @@ TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n• Dodatkowo: \n\n"
@@ -74,19 +77,23 @@ def add_hyperlink(p, url, text):
     r_id = part.relate_to(url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True)
     hl = OxmlElement('w:hyperlink'); hl.set(qn('r:id'), r_id)
     nr = OxmlElement('w:r'); rPr = OxmlElement('w:rPr')
-    c = OxmlElement('w:color'); c.set(qn('w:val'), '4D6C70'); rPr.append(c)
+    c = OxmlElement('w:color'); c.set(qn('w:val'), '0563C1'); rPr.append(c)
     u = OxmlElement('w:u'); u.set(qn('w:val'), 'single'); rPr.append(u)
     nr.append(rPr); tn = OxmlElement('w:t'); tn.text = text; nr.append(tn); hl.append(nr); p._p.append(hl)
     return hl
 
 def parsuj_i_formatuj_tekst(p, tekst):
+    # NAPRAWA: Bezpieczne i szybkie wykrywanie alertów bez użycia Regexa
     parts = tekst.split('[BRAK INFORMACJI]')
     for i, part in enumerate(parts):
         if part:
+            # Szybki podział tekstowy na bloki z gwiazdkami (co drugi element jest pogrubiony)
             sub_segs = part.split('**')
             for idx, sub_seg in enumerate(sub_segs):
                 if not sub_seg: continue
                 czy_pogrubiony = (idx % 2 == 1)
+                
+                # Wyciąganie linków z danego segmentu
                 url_segs = re.split(r'(https?://[^\s]+)', sub_seg)
                 for u_idx, u_seg in enumerate(url_segs):
                     if u_idx % 2 == 1:
@@ -113,7 +120,7 @@ def konwertuj_do_docx(tekst_md):
     
     pk = kl.paragraphs[0]; pk.paragraph_format.space_after = Pt(0)
     pk.add_run("Anna Michalska\n").bold = True; pk.runs[-1].font.size = Pt(11)
-    ps = pk.add_run("Dietetyka Psów i Kotów\n"); ps.font.size, ps.font.color.rgb = Pt(9), RGBColor(77, 108, 112)
+    ps = pk.add_run("Dietetyka Psów i Kotów\n"); ps.font.size, ps.font.color.rgb = Pt(9), RGBColor(100, 116, 139)
     pd_t = pk.add_run("miesnepsokotki@gmail.com  |  https://www.facebook.com/meatpoint.io"); pd_t.font.size, pd_t.font.color.rgb = Pt(8.5), RGBColor(100, 116, 139)
     
     if os.path.exists("logo.png"):
@@ -141,7 +148,7 @@ def konwertuj_do_docx(tekst_md):
         if l_s.startswith('## '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
             czysty_h2 = l_s.replace('## ', '').replace('**', '')
-            r = p.add_run(czysty_h2); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(77, 108, 112)
+            r = p.add_run(czysty_h2); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(194, 65, 12)
         elif l_s.startswith('### '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(8), Pt(2)
             czysty_h3 = l_s.replace('### ', '').replace('**', '')
@@ -170,157 +177,21 @@ def konwertuj_do_docx(tekst_md):
             
     b = BytesIO(); doc.save(b); return b.getvalue()
 
-# ==============================================================================
-# 🎨 GŁÓWNY ARCHITEKTONICZNY CSS - NADPISYWANIE KOMPONENTÓW WEWNĘTRZNYCH REACTA
-# ==============================================================================
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
-
-st.markdown("""
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <style>
-        /* Ukrycie wadliwych elementów systemowych na górze strony */
-        span[data-testid="collapsedControl"], header, .stApp header {
-            display: none !important;
-        }
-        
-        /* Tło aplikacji */
-        .stApp, html, body, .main .block-container {
-            background-color: #F9F7F2 !important;
-            font-family: 'Poppins', sans-serif !important;
-        }
-        
-        [data-testid="stSidebar"], [data-testid="stSidebar"] section {
-            background-color: #F3F0E7 !important;
-            border-right: 1px solid #CBD5E1 !important;
-        }
-        
-        h1, h2, h3, h4, h5, h6, p, label, li, span, th, td, small {
-            color: #1E293B !important;
-            font-family: 'Poppins', sans-serif !important;
-        }
-
-        /* 1. LIKWIDACJA CZARNEGO TŁA W SELECTBOX I INPUTACH (Autoryzacja i wybór modelu) */
-        div[data-baseweb="select"] > div, 
-        div[data-baseweb="input"] > div,
-        div[data-baseweb="base-input"],
-        .stTextInput input {
-            background-color: #FFFFFF !important;
-            color: #1E293B !important;
-            border-radius: 8px !important;
-            border: 1px solid #CBD5E1 !important;
-        }
-        div[data-baseweb="select"] span {
-            color: #1E293B !important;
-        }
-        
-        /* Naprawa przycisku "oka" w haśle */
-        div[data-baseweb="input"] button {
-            background-color: transparent !important;
-            color: #4D6C70 !important;
-        }
-
-        /* 2. NAPRAWA ROZJECHANEGO, CZARNEGO PRZYCISKU W UPLOADERZE */
-        [data-testid="stFileUploadDropzone"] {
-            background-color: #FFFFFF !important;
-            border: 2px dashed #4D6C70 !important;
-            border-radius: 12px !important;
-        }
-        [data-testid="stFileUploadDropzone"] button {
-            background-color: #F1F5F9 !important;
-            color: #1E293B !important;
-            border: 1px solid #CBD5E1 !important;
-            border-radius: 8px !important;
-            font-family: 'Poppins', sans-serif !important;
-            font-weight: 500 !important;
-            padding: 4px 16px !important;
-        }
-        [data-testid="stFileUploadDropzone"] button:hover {
-            background-color: #E2E8F0 !important;
-        }
-        [data-testid="stFileUploadDropzone"] * {
-            color: #334155 !important;
-        }
-
-        /* 3. PEŁNY KONTRAST DLA ZABLOKOWANEGO POLA TEKSTOWEGO (Aktualna treść sekcji) */
-        .stTextArea textarea, .stTextArea textarea:disabled, .stTextArea textarea[disabled] {
-            background-color: #FFFFFF !important;
-            color: #1E293B !important;
-            -webkit-text-fill-color: #1E293B !important;
-            opacity: 1 !important;
-            border: 2px solid #CBD5E1 !important;
-            border-radius: 12px !important;
-            font-family: 'Poppins', sans-serif !important;
-        }
-
-        /* 4. CZYSZCZENIE LIST ROZWIJANYCH (Usunięcie czarnych kątów) */
-        div[data-baseweb="popover"], div[role="listbox"], ul[role="listbox"], li[role="option"] {
-            background-color: #FFFFFF !important;
-            color: #1E293B !important;
-            border-radius: 0px !important;
-            box-shadow: none !important;
-        }
-        li[role="option"]:hover {
-            background-color: #F1F5F9 !important;
-            color: #4D6C70 !important;
-        }
-
-        /* 5. ELIMINACJA TŁA MIKROFONU (Usunięcie czarnego paska) */
-        div.element-container iframe, iframe, .stMarkdown + div {
-            background-color: transparent !important;
-            border: none !important;
-        }
-
-        /* Zakładki górne (Nawigacja) */
-        button[data-baseweb="tab"] {
-            color: #64748B !important;
-            font-weight: 500 !important;
-            background-color: transparent !important;
-        }
-        button[data-baseweb="tab"][aria-selected="true"] {
-            color: #4D6C70 !important;
-            font-weight: 600 !important;
-            border-bottom: 3px solid #4D6C70 !important;
-        }
-        
-        /* Główne przyciski akcji (Wygeneruj / Pobierz) */
-        div.stButton > button[key="btn_gen_tab1"], div[data-testid="stDownloadButton"] > button {
-            background: linear-gradient(135deg, #4D6C70 0%, #354B4E 100%) !important;
-            color: #FFFFFF !important;
-            border-radius: 12px !important;
-            border: none !important;
-            font-family: 'Poppins', sans-serif !important;
-            font-weight: 600 !important;
-            letter-spacing: 0.3px !important;
-            padding: 0.7rem 2.2rem !important;
-            box-shadow: 0 4px 10px rgba(77, 108, 112, 0.3) !important;
-            transition: all 0.25s ease-in-out !important;
-            width: 100% !important;
-        }
-        div.stButton > button:hover, div[data-testid="stDownloadButton"] > button:hover {
-            transform: translateY(-1px) !important;
-            filter: brightness(1.1) !important;
-        }
-        
-        #MainMenu, footer {visibility: hidden;}
-    </style>
-""", unsafe_allow_html=True)
 
 with st.sidebar:
     st.header("🔑 Autoryzacja")
     api_key = st.text_input("Klucz API Gemini", type="password")
     model_choice = st.selectbox("Wybierz model", ["gemini-3.5-flash", "gemini-3.1-pro"])
 
-tab1, tab2 = st.tabs(["🐾 Generator opisów wizyt", "🎙️ Edytor głosowy opisów wizyt"])
+tab1, tab2 = st.tabs(["🚀 Generator Protokołów (Wklej Tekst)", "🎙️ Głosowy Edytor (Voice Editor)"])
 
 # ==============================================================================
-# 🚀 ZAKŁADKA 1: GENERATOR OPISÓW WIZYT
+# 🚀 ZAKŁADKA 1: JEDNO, DUŻE OKNO (STABILNE PRZETWARZANIE TEKSTOWE)
 # ==============================================================================
 with tab1:
-    st.title("🐾 Generator opisów wizyt")
-    st.markdown("Wklej przygotowaną transkrypcję z rozmowy, aby automatycznie zbudować pedantycznie sformatowany dokument Word.")
+    st.title("🐾 Szybki Generator Protokołów MeatPoint.io")
+    st.markdown("Wklej gotową transkrypcję przygotowaną bezpośrednio w Gemini, aby natychmiast zbudować sformatowany dokument Word.")
     
     col1, col2 = st.columns([1, 1], gap="large")
     
@@ -331,7 +202,7 @@ with tab1:
         st.subheader("📋 Wynikowy Protokół Wizyty")
         LINK_DO_ARKUSZA = "https://docs.google.com/spreadsheets/d/1qgSX_t4_fb36CqtFUluPDKDQILpR9_SLOlYBPTXSTes/edit?usp=sharing"
         
-        if st.button("🚀 Wygeneruj i uzupełnij Protokół Word", type="primary", use_container_width=True, key="btn_gen_tab1"):
+        if st.button("🚀 Wygeneruj i uzupełnij Protokół Word", type="primary", use_container_width=True):
             if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz upewnij się, że okno transkrypcji nie jest puste!")
             else:
                 with st.spinner("Analiza kliniczna całego tekstu i dopasowywanie linków..."):
@@ -376,14 +247,14 @@ with tab1:
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu wynikowego:", value=res.text, height=350, key="podglad_gen")
-                        st.download_button("📥 POBIERZ GOTOWY PLIK WORD (.DOCX)", konwertuj_do_docx(res.text), "Protokol_MeatPoint.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_tab1")
+                        st.download_button("📥 POBIERZ GOTOWY PLIK WORD (.DOCX)", konwertuj_do_docx(res.text), "Protokol_MeatPoint.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
                     except Exception as e: st.error(f"🚨 Błąd generatora: {e}")
 
 # ==============================================================================
-# 🎙️ ZAKŁADKA 2: EDYTOR GŁOSOWY OPISÓW WIZYT
+# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW
 # ==============================================================================
 with tab2:
-    st.title("🎙️ Edytor głosowy opisów wizyt")
+    st.title("🎙️ Inteligentny Edytor Głosowy Protokółów")
     
     if 'sekcje_dokumentu' not in st.session_state: st.session_state.sekcje_dokumentu = None
     if 'koszyk_nagran' not in st.session_state: st.session_state.koszyk_nagran = {}
@@ -395,7 +266,7 @@ with tab2:
         u_file = st.file_uploader("📂 Wgraj plik protokołu (.docx):", type=["docx"], key=f"u_{st.session_state.v_key}")
     with col_top2:
         st.write("</br>", unsafe_allow_html=True)
-        if st.button("🔄 Nowy opis / Reset", type="secondary", use_container_width=True, key="btn_reset_tab2"):
+        if st.button("🔄 Nowy protokół / Reset", type="secondary", use_container_width=True):
             st.session_state.sekcje_dokumentu = None
             st.session_state.koszyk_nagran = {}
             st.session_state.klucze_mikrofonow = {}
@@ -403,7 +274,7 @@ with tab2:
             st.rerun()
             
     if u_file and st.session_state.sekcje_dokumentu is None:
-        if st.button("⚙️ Załaduj strukturę pliku", key="btn_load_struct"):
+        if st.button("⚙️ Załaduj strukturę pliku"):
             st.session_state.sekcje_dokumentu = segmentuj_docx(u_file.read()); st.rerun()
 
     if st.session_state.sekcje_dokumentu:
@@ -413,7 +284,6 @@ with tab2:
         with col_ed1:
             st.markdown("### 1️⃣ Wybór obszaru do korekty")
             wybrana_sekcja = st.selectbox("Wybierz nagłówek, do którego chcesz dodać nagranie:", list(st.session_state.sekcje_dokumentu.keys()), key="sel_voice")
-            
             st.text_area("📄 Aktualna treść sekcji:", value=st.session_state.sekcje_dokumentu[wybrana_sekcja], height=220, disabled=True, key=f"t_{wybrana_sekcja}")
             
             if wybrana_sekcja not in st.session_state.klucze_mikrofonow:
@@ -447,7 +317,7 @@ with tab2:
                             st.rerun()
                 
                 st.markdown("---")
-                if st.button("🚀 WPROWADŹ WSZYSTKIE POPRAWKI GŁOSOWE (HURTOWO)", type="primary", use_container_width=True, key="btn_apply_voice"):
+                if st.button("🚀 WPROWADŹ WSZYSTKIE POPRAWKI GŁOSOWE (HURTOWO)", type="primary", use_container_width=True):
                     if not api_key: st.error("❌ Podaj klucz API Gemini!")
                     else:
                         with st.spinner("Gemini edytuje wybrane fragmenty..."):
@@ -475,4 +345,4 @@ with tab2:
                 else:
                     prefix = "" if sk.startswith("###") else "## "
                     t_md += f"{prefix}{sk}\n{ts}\n\n"
-            st.download_button("📥 POBIERZ PROTOKÓŁ (.DOCX)", konwertuj_do_docx(t_md), "Protokol_MeatPoint_Poprawiony.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_tab2")
+            st.download_button("📥 POBIERZ PROTOKÓŁ (.DOCX)", konwertuj_do_docx(t_md), "Protokol_MeatPoint_Poprawiony.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
