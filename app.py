@@ -7,7 +7,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
-# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA ZGODNIE Z PROWADZONĄ PRAKTYKĄ ---
+# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA 1:1 Z DOKUMENTEM ---
 STRUKTURA_PROTOKOLU = [
     "Powód konsultacji:", "Aktualne samopoczucie:", "Aktywność:", "Apetyt:", "Pragnienie:",
     "Dotychczasowe żywienie:", "Smaczki i przysmaki:", "Ulubione smaki:",
@@ -173,7 +173,7 @@ def konwertuj_do_docx(tekst_md):
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 # ==============================================================================
-# 🎨 RESTRYKCYJNE NADPISANIE CSS - DETALE KONTRASTU, ROZWIJANYCH LIST I MIKROFONU
+# 🎨 RESTRYKCYJNY I TERMINALNY ARKUSZ STYLÓW CSS (NADPNIĘCIE ELEMENTÓW OPORNYCH)
 # ==============================================================================
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
 
@@ -183,12 +183,12 @@ st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* 1. Usunięcie systemowego błędu napisu tekstowego w lewym górnym rogu */
+        /* Całkowite odcięcie systemowego błędu w lewym rogu oraz paska header */
         span[data-testid="collapsedControl"], header, .stApp header {
             display: none !important;
         }
         
-        /* 2. Globalna podstawa chmury i czcionka Poppins */
+        /* Wymuszenie tła premium i czcionki Poppins */
         .stApp, html, body, .main .block-container {
             background-color: #F9F7F2 !important;
         }
@@ -203,7 +203,7 @@ st.markdown("""
             font-family: 'Poppins', sans-serif !important;
         }
         
-        /* 3. PEŁNA KOREKTA I WYCZYSZCZENIE LIST ROZWIJANYCH (Usunięcie czarnych pasków) */
+        /* 1. BEZWZGLĘDNA NAPRAWA PANELU POPOVER I ROZWIJANYCH LIST (Usunięcie czarnego boku) */
         div[data-baseweb="popover"], div[role="listbox"], ul[role="listbox"], div[data-baseweb="menu"] {
             background-color: #FFFFFF !important;
             color: #1E293B !important;
@@ -211,10 +211,17 @@ st.markdown("""
             border-radius: 12px !important;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
         }
+        /* Wycięcie brzydkich suwaków tła Streamlita */
+        div[role="listbox"]::-webkit-scrollbar {
+            width: 6px !important;
+        }
+        div[role="listbox"]::-webkit-scrollbar-thumb {
+            background-color: #CBD5E1 !important;
+            border-radius: 4px !important;
+        }
         li[role="option"] {
             background-color: #FFFFFF !important;
             color: #1E293B !important;
-            padding: 8px 12px !important;
         }
         li[role="option"] span, div[role="listbox"] div {
             color: #1E293B !important;
@@ -225,7 +232,7 @@ st.markdown("""
             color: #4D6C70 !important;
         }
 
-        /* 4. DOPASOWANIE OBWÓDKI AUTORYZACJI ORAZ OKA W PANELU BOCZNYM */
+        /* 2. WYCZYSZCZENIE INPUTÓW ORAZ PRZYCISKU OKA W AUTORYZACJI */
         .stTextInput input, .stSelectbox div[data-baseweb="select"], .stSelectbox span, .stSelectbox div {
             color: #1E293B !important;
             background-color: #FFFFFF !important;
@@ -235,10 +242,9 @@ st.markdown("""
         .stTextInput input, .stSelectbox div[data-baseweb="select"] {
             border: 2px solid #CBD5E1 !important;
         }
-        /* Usunięcie ciemnego podświetlenia wokół ikony oka */
-        .stTextInput div[data-baseweb="input"] {
+        div[data-baseweb="input"] {
             background-color: #FFFFFF !important;
-            border-radius: 12px !important;
+            border: none !important;
         }
         .stTextInput button {
             color: #4D6C70 !important;
@@ -246,19 +252,22 @@ st.markdown("""
             border: none !important;
         }
         
-        /* 5. FIX MODUŁU AUDIO I MIKROFONU (Koniec z czarnym paskiem i rozsypanym tekstem) */
-        div[class*="stMarkdown"] iframe, div.element-container iframe {
+        /* 3. CAŁKOWITY REBUILD MODUŁU MIKROFONU ( mic_recorder ) - Koniec z czarną belką */
+        div.element-container iframe, iframe {
             background-color: transparent !important;
+            color-scheme: light !important;
         }
-        /* Dopasowanie struktury paska mic_recorder */
-        div[data-testid="stVerticalBlock"] div[style*="flex-direction: column"] button {
-            background-color: #FFFFFF !important;
-            color: #1E293B !important;
-            border: 2px solid #CBD5E1 !important;
-            border-radius: 12px !important;
+        /* Wymuszenie stylu na przycisku nagrywania wewnątrz struktur */
+        button[id*="record"], .stApp button {
+            font-family: 'Poppins', sans-serif !important;
+        }
+        /* Uniwersalny chwytak dla elementu mikrofonu, jeśli renderuje się poza standardowym DOM */
+        div[style*="background-color: rgb(240, 242, 246)"], div[style*="background-color: black"], .stMarkdown + div {
+            background-color: transparent !important;
+            border: none !important;
         }
         
-        /* Uploader plików (Zabezpieczenie przed czarnym tłem) */
+        /* 4. TOTALNA NAPRAWA PLIKÓW I UPLOADERA (Usunięcie nakładających się czarnych napisów) */
         [data-testid="stFileUploader"], [data-testid="stFileUploader"] section {
             background-color: #FFFFFF !important;
             border-radius: 12px !important;
@@ -266,16 +275,16 @@ st.markdown("""
         [data-testid="stFileUploader"] {
             border: 2px dashed #4D6C70 !important;
         }
-        [data-testid="stFileUploader"] section div, 
-        [data-testid="stFileUploader"] span, 
-        [data-testid="stFileUploader"] small, 
-        [data-testid="stFileUploader"] button,
-        [data-testid="stFileUploader"] div {
+        [data-testid="stFileUploader"] * {
             color: #334155 !important;
             font-family: 'Poppins', sans-serif !important;
         }
+        /* Schowanie brzydkich, zduplikowanych, czarnych warstw pod spodem */
+        [data-testid="stFileUploader"] dropzone div {
+            color: #334155 !important;
+        }
         
-        /* Obszar roboczy pól tekstowych */
+        /* Pola robocze tekstowe */
         .stTextArea textarea {
             background-color: #FFFFFF !important;
             border: 2px solid #CBD5E1 !important;
@@ -284,7 +293,7 @@ st.markdown("""
             font-family: 'Poppins', sans-serif !important;
         }
         
-        /* Zakładki górne */
+        /* Projekt górnych zakładek */
         button[data-baseweb="tab"] {
             color: #64748B !important;
             font-weight: 500 !important;
@@ -296,7 +305,7 @@ st.markdown("""
             border-bottom: 3px solid #4D6C70 !important;
         }
         
-        /* Unifikacja i butelkowy gradient przycisków */
+        /* Butelkowy gradient premium dla przycisków */
         div.stButton > button, div[data-testid="stDownloadButton"] > button {
             background: linear-gradient(135deg, #4D6C70 0%, #354B4E 100%) !important;
             color: #FFFFFF !important;
@@ -359,7 +368,7 @@ with tab1:
                             system_instruction=(
                                 "Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. "
                                 "Pisz WYŁĄCZNIE absolutną prawdę na podstawie dostarczonego pliku tekstowego transkrypcji. "
-                                "ZAKAZ zmyślania jakichkolwiek faktów,wyników badań, dawek leków czy preparatów celowanych. "
+                                "ZAKAZ zmyślania jakichkolwiek faktów, wyników badań, dawek leków czy preparatów celowanych. "
                                 "ZAKAZ samodzielnego wyliczania wartości biochemicznych karm, jeśli nie zostały podyktowane słowo w słowo. "
                                 "Jeśli chcesz coś wyróżnić medycznie (np. lek, dawkę lub kluczowy wniosek), używaj podwójnych gwiazdek **tekst**."
                                 "Jeśli brakuje jakichkolwiek danych dla danej etykiety lub sekcji, bezwarunkowo i sztywno wstaw fragment [BRAK INFORMACJI]."
@@ -384,7 +393,7 @@ with tab1:
                                 prefix = "" if naglowek.startswith("###") else "## "
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Uzupełnij precyzyjnymi faktami medycznymi z transkrypcji.\n"
 
-                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓZ Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
+                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu wynikowego:", value=res.text, height=350, key="podglad_gen")
