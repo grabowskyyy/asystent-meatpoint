@@ -83,34 +83,25 @@ def add_hyperlink(p, url, text):
     return hl
 
 def parsuj_i_formatuj_tekst(p, tekst):
-    # NAPRAWA: Bezpieczne parsowanie czerwonych alertów oraz pogrubień Markdown (**) wewnątrz linii
+    # NAPRAWA: Bezpieczne i szybkie wykrywanie alertów bez użycia Regexa
     parts = tekst.split('[BRAK INFORMACJI]')
     for i, part in enumerate(parts):
         if part:
-            # Dzielimy fragment na części pogrubione za pomocą wyrażenia regularnego
-            sub_segs = re.split(r'(\*\*.*?\*\*)', part)
-            for sub_seg in sub_segs:
+            # Szybki podział tekstowy na bloki z gwiazdkami (co drugi element jest pogrubiony)
+            sub_segs = part.split('**')
+            for idx, sub_seg in enumerate(sub_segs):
                 if not sub_seg: continue
+                czy_pogrubiony = (idx % 2 == 1)
                 
-                # Jeśli to fragment do pogrubienia
-                if sub_seg.startswith('**') and sub_seg.endswith('**'):
-                    czysty_tekst = sub_seg.replace('**', '')
-                    # Sprawdzamy czy wewnątrz pogrubienia jest link
-                    url_segs = re.split(r'(https?://[^\s]+)', czysty_tekst)
-                    for idx, u_seg in enumerate(url_segs):
-                        if idx % 2 == 1:
-                            add_hyperlink(p, u_seg, u_seg)
-                        else:
-                            run = p.add_run(u_seg)
+                # Wyciąganie linków z danego segmentu
+                url_segs = re.split(r'(https?://[^\s]+)', sub_seg)
+                for u_idx, u_seg in enumerate(url_segs):
+                    if u_idx % 2 == 1:
+                        add_hyperlink(p, u_seg, u_seg)
+                    else:
+                        run = p.add_run(u_seg)
+                        if czy_pogrubiony:
                             run.bold = True
-                else:
-                    # Zwykły tekst (może zawierać linki)
-                    url_segs = re.split(r'(https?://[^\s]+)', sub_seg)
-                    for idx, u_seg in enumerate(url_segs):
-                        if idx % 2 == 1:
-                            add_hyperlink(p, u_seg, u_seg)
-                        else:
-                            p.add_run(u_seg).bold = False
                             
         if i < len(parts) - 1:
             ra = p.add_run('[BRAK INFORMACJI]')
@@ -149,7 +140,6 @@ def konwertuj_do_docx(tekst_md):
             p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(12), Pt(6)
             poczatek_daty, *koniec_daty = l_s.split(':', 1)
-            # Usunięcie gwiazdek z samej etykiety nagłówka
             poczatek_czysty = poczatek_daty.replace('**', '').strip()
             p.add_run(poczatek_czysty + ': ').bold = True
             if koniec_daty: parsuj_i_formatuj_tekst(p, koniec_daty[0].strip())
@@ -166,8 +156,6 @@ def konwertuj_do_docx(tekst_md):
         elif l_s.startswith('- ') or l_s.startswith('* ') or l_s.startswith('• '):
             c_t = l_s.lstrip('-*• ').strip()
             p = doc.add_paragraph(style='List Bullet'); p.paragraph_format.space_after = Pt(3)
-            
-            # Analiza struktury wypunktowania z dwukropkiem (np. Rasa: ...)
             if ':' in c_t and not c_t.strip().startswith('http'):
                 pk_s, zk_s = c_t.split(':', 1)
                 if len(pk_s) < 45: 
@@ -198,6 +186,9 @@ with st.sidebar:
 
 tab1, tab2 = st.tabs(["🚀 Generator Protokołów (Wklej Tekst)", "🎙️ Głosowy Edytor (Voice Editor)"])
 
+# ==============================================================================
+# 🚀 ZAKŁADKA 1: JEDNO, DUŻE OKNO (STABILNE PRZETWARZANIE TEKSTOWE)
+# ==============================================================================
 with tab1:
     st.title("🐾 Szybki Generator Protokołów MeatPoint.io")
     st.markdown("Wklej gotową transkrypcję przygotowaną bezpośrednio w Gemini, aby natychmiast zbudować sformatowany dokument Word.")
