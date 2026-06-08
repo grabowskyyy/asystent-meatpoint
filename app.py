@@ -24,7 +24,7 @@ TEKST_TYNDALIZACJA_STALY = (
     "Jeżeli robią Państwo dietę na dłużej niż 5-6 dni (mowa o diecie surowej) i chcą Państwo "
     "ją bezpiecznie przechowywać w słoiczkach w lodówce (bez zamrażania) LUB przygotowują Państwo "
     "dietę gotowaną (BACF) na zapas, konieczne jest przeprowadzenie procesu tyndalizacji (potrójnej pasteryzacji).\n\n"
-    "Proces Greenwich skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
+    "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
     "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
     "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozicnn"
@@ -52,7 +52,7 @@ TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n• Dodatkowo: \n\n"
+    "• Wody\n• Miersa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n• Dodatkowo: \n\n"
     "To będzie już kompletna dieta."
@@ -173,7 +173,7 @@ def konwertuj_do_docx(tekst_md):
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 # ==============================================================================
-# 🎨 PROFESJONALNY, RESTRYKCYJNY BRANDING PREMIUM (POPPINS, GRADIENT & FIX KONTRASTU)
+# 🎨 RESTRYKCYJNA NADPISKA STYLÓW CSS PREMIUM - ROZWIĄZANIE DROPDOWNÓW I PRZYCISKÓW
 # ==============================================================================
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
 
@@ -183,81 +183,77 @@ st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* 1. Usunięcie błędu napisu systemowego w lewym górnym rogu */
-        span[data-testid="collapsedControl"] {
-            display: none !important;
-        }
-        .stApp header {
+        /* Usunięcie systemowego błędu napisu i nagłówka */
+        span[data-testid="collapsedControl"], header, .stApp header {
             display: none !important;
         }
         
-        /* 2. Globalne wstrzyknięcie tła i czcionki Poppins */
+        /* Globalna baza i czcionka Poppins */
         .stApp, html, body, .main .block-container {
             background-color: #F9F7F2 !important;
         }
         
-        /* Panel boczny autoryzacji */
         [data-testid="stSidebar"], [data-testid="stSidebar"] section {
             background-color: #F3F0E7 !important;
             border-right: 1px solid #E2E8F0 !important;
         }
         
-        /* Pełny kontrast i kolor dla wszystkich typów tekstów */
         h1, h2, h3, h4, h5, h6, p, label, li, span, th, td, small {
             color: #1E293B !important;
             font-family: 'Poppins', sans-serif !important;
         }
         
-        /* 3. NAPRAWA INPUTÓW I SELECTBOXÓW W PANELU BOCZNYM (Koniec z czarnym tłem) */
-        .stTextInput input, 
-        .stSelectbox div[data-baseweb="select"], 
-        .stSelectbox div,
-        .stSelectbox span,
-        div[data-testid="stWidgetLabel"] p {
+        /* FIX: Pełna czytelność list rozwijanych (Wybór modelu, Wybór sekcji do edycji) */
+        div[data-baseweb="popover"], div[role="listbox"], ul[role="listbox"], li[role="option"], div[data-baseweb="menu"] {
             background-color: #FFFFFF !important;
             color: #1E293B !important;
+        }
+        li[role="option"] span, div[role="listbox"] div, div[data-baseweb="popover"] div {
+            color: #1E293B !important;
+            font-family: 'Poppins', sans-serif !important;
+        }
+        /* Efekt najazdu myszką na element listy rozwijanej */
+        li[role="option"]:hover, li[role="option"][aria-selected="true"] {
+            background-color: #E2E8F0 !important;
+            color: #4D6C70 !important;
+        }
+
+        /* Kontrola nad inputami tekstowymi i bazami selectboxów */
+        .stTextInput input, .stSelectbox div[data-baseweb="select"], .stSelectbox span, .stSelectbox div {
+            color: #1E293B !important;
+            background-color: #FFFFFF !important;
             border-radius: 12px !important;
             font-family: 'Poppins', sans-serif !important;
         }
         .stTextInput input, .stSelectbox div[data-baseweb="select"] {
             border: 2px solid #CBD5E1 !important;
         }
-        
-        /* Ikona oka i przyciski wewnątrz pól input */
         .stTextInput button {
             color: #4D6C70 !important;
             background-color: transparent !important;
         }
         
-        /* 4. NAPRAWA UPLOADERA PLIKÓW (Koniec z ciemnym boksem) */
-        [data-testid="stFileUploader"] {
+        /* Uploader plików */
+        [data-testid="stFileUploader"], [data-testid="stFileUploader"] section {
             background-color: #FFFFFF !important;
-            border: 2px dashed #4D6C70 !important;
             border-radius: 12px !important;
         }
-        [data-testid="stFileUploader"] section {
-            background-color: #FFFFFF !important;
+        [data-testid="stFileUploader"] {
+            border: 2px dashed #4D6C70 !important;
         }
-        [data-testid="stFileUploader"] section div, 
-        [data-testid="stFileUploader"] span, 
-        [data-testid="stFileUploader"] small,
-        [data-testid="stFileUploader"] button {
+        [data-testid="stFileUploader"] section div, [data-testid="stFileUploader"] span, [data-testid="stFileUploader"] small, [data-testid="stFileUploader"] button {
             color: #334155 !important;
             font-family: 'Poppins', sans-serif !important;
         }
         
-        /* 5. NAPRAWA STATUSÓW I ALERTÓW KROKOWYCH (st.spinner, st.info, st.error) */
-        div[data-testid="stAlert"] {
+        /* Alerty, statusy, komunikaty informacyjne */
+        div[data-testid="stAlert"], div[data-testid="stAlert"] div {
             background-color: #FFFFFF !important;
-            border: 1px solid #E2E8F0 !important;
-            border-radius: 12px !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
-        }
-        div[data-testid="stAlert"] div {
             color: #1E293B !important;
+            border-radius: 12px !important;
         }
         
-        /* Projekt obszaru roboczego tekstu */
+        /* Obszar roboczy pól text_area */
         .stTextArea textarea {
             background-color: #FFFFFF !important;
             border: 2px solid #CBD5E1 !important;
@@ -283,8 +279,8 @@ st.markdown("""
             border-bottom: 3px solid #4D6C70 !important;
         }
         
-        /* Ekspercki gradient przycisków akcji */
-        div.stButton > button {
+        /* UNIFIKACJA PRZYCISKÓW: Prestiżowy gradient butelkowy dla każdego typu przycisku w aplikacji */
+        div.stButton > button, div[data-testid="stDownloadButton"] > button {
             background: linear-gradient(135deg, #4D6C70 0%, #354B4E 100%) !important;
             color: #FFFFFF !important;
             border-radius: 12px !important;
@@ -295,11 +291,12 @@ st.markdown("""
             padding: 0.7rem 2.2rem !important;
             box-shadow: 0 4px 10px rgba(77, 108, 112, 0.3) !important;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            width: 100% !important;
         }
-        div.stButton > button:hover {
+        div.stButton > button:hover, div[data-testid="stDownloadButton"] > button:hover {
             box-shadow: 0 8px 16px rgba(77, 108, 112, 0.4) !important;
             transform: translateY(-1px) !important;
-            filter: brightness(1.1);
+            filter: brightness(1.1) !important;
         }
         
         #MainMenu, footer {visibility: hidden;}
@@ -329,7 +326,7 @@ with tab1:
         st.subheader("📋 Wynikowy Protokół Wizyty")
         LINK_DO_ARKUSZA = "https://docs.google.com/spreadsheets/d/1qgSX_t4_fb36CqtFUluPDKDQILpR9_SLOlYBPTXSTes/edit?usp=sharing"
         
-        if st.button("🚀 Wygeneruj i uzupełnij Protokół Word", type="primary", use_container_width=True):
+        if st.button("🚀 Wygeneruj i uzupełnij Protokół Word", type="primary", use_container_width=True, key="btn_gen_tab1"):
             if not api_key or not transcript: st.error("❌ Uzupełnij klucz API oraz upewnij się, że okno transkrypcji nie jest puste!")
             else:
                 with st.spinner("Analiza kliniczna całego tekstu i dopasowywanie linków..."):
@@ -355,7 +352,7 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dipozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.ionnPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.ionnPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
@@ -374,7 +371,7 @@ with tab1:
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu wynikowego:", value=res.text, height=350, key="podglad_gen")
-                        st.download_button("📥 POBIERZ GOTOWY PLIK WORD (.DOCX)", konwertuj_do_docx(res.text), "Protokol_MeatPoint.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                        st.download_button("📥 POBIERZ GOTOWY PLIK WORD (.DOCX)", konwertuj_do_docx(res.text), "Protokol_MeatPoint.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_tab1")
                     except Exception as e: st.error(f"🚨 Błąd generatora: {e}")
 
 # ==============================================================================
@@ -393,7 +390,7 @@ with tab2:
         u_file = st.file_uploader("📂 Wgraj plik protokołu (.docx):", type=["docx"], key=f"u_{st.session_state.v_key}")
     with col_top2:
         st.write("</br>", unsafe_allow_html=True)
-        if st.button("🔄 Nowy opis / Reset", type="secondary", use_container_width=True):
+        if st.button("🔄 Nowy opis / Reset", type="secondary", use_container_width=True, key="btn_reset_tab2"):
             st.session_state.sekcje_dokumentu = None
             st.session_state.koszyk_nagran = {}
             st.session_state.klucze_mikrofonow = {}
@@ -401,7 +398,7 @@ with tab2:
             st.rerun()
             
     if u_file and st.session_state.sekcje_dokumentu is None:
-        if st.button("⚙️ Załaduj strukturę pliku"):
+        if st.button("⚙️ Załaduj strukturę pliku", key="btn_load_struct"):
             st.session_state.sekcje_dokumentu = segmentuj_docx(u_file.read()); st.rerun()
 
     if st.session_state.sekcje_dokumentu:
@@ -444,7 +441,7 @@ with tab2:
                             st.rerun()
                 
                 st.markdown("---")
-                if st.button("🚀 WPROWADŹ WSZYSTKIE POPRAWKI GŁOSOWE (HURTOWO)", type="primary", use_container_width=True):
+                if st.button("🚀 WPROWADŹ WSZYSTKIE POPRAWKI GŁOSOWE (HURTOWO)", type="primary", use_container_width=True, key="btn_apply_voice"):
                     if not api_key: st.error("❌ Podaj klucz API Gemini!")
                     else:
                         with st.spinner("Gemini edytuje wybrane fragmenty..."):
@@ -472,4 +469,4 @@ with tab2:
                 else:
                     prefix = "" if sk.startswith("###") else "## "
                     t_md += f"{prefix}{sk}\n{ts}\n\n"
-            st.download_button("📥 POBIERZ PROTOKÓŁ (.DOCX)", konwertuj_do_docx(t_md), "Protokol_MeatPoint_Poprawiony.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+            st.download_button("📥 POBIERZ PROTOKÓŁ (.DOCX)", konwertuj_do_docx(t_md), "Protokol_MeatPoint_Poprawiony.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_tab2")
