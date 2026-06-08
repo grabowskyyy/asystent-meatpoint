@@ -28,7 +28,7 @@ TEKST_TYNDALIZACJA_STALY = (
     "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
     "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
-    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
+    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozicnn"
     "Dodatkowo przygotowaliśmy dla Państwa praktyczny poradnik w formie wideo na platformie YouTube, "
     "gdzie pokazujemy cały proces krok po kroku: https://www.youtube.com/watch?v=tyfT3kmq3ME"
 )
@@ -39,6 +39,24 @@ TEKST_INNE_SMACZKI_STALY = (
     "Szczegółowy poradnik oraz instrukcję, jak samodzielnie wyliczyć kaloryczność dowolnego produktu komercyjnego "
     "na podstawie danych z etykiety, znajdą Państwo w naszym artykule: "
     "https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow"
+)
+
+TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
+    "Proszę zacząć od:\n• Wody\n• Mięsa\n• Podrobów\n• tłuszczu\n• Tauryny\n"
+    "Proszę przygotować dietę tylko z ich zawartością i na razie pominąć pozostałe suplementy.\n\n"
+    "Jak Kicia będzie się dobrze czuła, na następny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n• Dodatkowo: \n\n"
+    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
+    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n• Dodatkowo: \n\n"
+    "To będzie już kompletna dieta."
 )
 
 def segmentuj_docx(file_bytes):
@@ -146,9 +164,6 @@ with st.sidebar:
 
 tab1, tab2 = st.tabs(["🚀 Generator Protokołów (Wklej Tekst)", "🎙️ Głosowy Edytor (Voice Editor)"])
 
-# ==============================================================================
-# 🚀 ZAKŁADKA 1: BŁYSKAWICZNE GENEROWANIE NA BAZIE WKLEJONEJ TRANSKRYPCJI
-# ==============================================================================
 with tab1:
     st.title("🐾 Szybki Generator Protokołów MeatPoint.io")
     st.markdown("Wklej gotową transkrypcję przygotowaną bezpośrednio w Gemini, aby natychmiast zbudować sformatowany dokument Word.")
@@ -172,47 +187,38 @@ with tab1:
                         for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Tytuł: {r['Nazwa']} | Kiedy dołączyć (Wskazanie): {r['Opis dla AI']}\n"
                         
                         genai.configure(api_key=api_key)
-                        m = genai.GenerativeModel(model_name=model_choice, system_instruction="Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. Pisz wyłącznie prawdę na podstawie dostarczonego pliku tekstowego. Jeśli brakuje danych, bezwzględnie wstaw fragment [BRAK INFORMACJI]. Zakaz zmyślania preparatów celowanych.")
+                        
+                        # Absolutny rygor anty-halucynacyjny w system_instruction
+                        m = genai.GenerativeModel(
+                            model_name=model_choice, 
+                            system_instruction=(
+                                "Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. "
+                                "Pisz WYŁĄCZNIE absolutną prawdę na podstawie dostarczonego pliku tekstowego transkrypcji. "
+                                "ZAKAZ zmyślania jakichkolwiek faktów, wyników badań, dawek leków czy preparatów celowanych. "
+                                "ZAKAZ samodzielnego wyliczania wartości biochemicznych karm, jeśli nie zostały podyktowane słowo w słowo. "
+                                "Jeśli brakuje jakichkolwiek danych dla danej etykiety lub sekcji, bezwarunkowo i sztywno wstaw fragment [BRAK INFORMACJI]."
+                            )
+                        )
                         
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.ionnPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_INNE_SMACZKI_STALY}\n\n"
                             elif naglowek == "Wprowadzanie suplementów:":
-                                # Sformatowany tekst etapowego wdrażania suplementacji
-                                instrukcja_szablonu += (
-                                    f"## {naglowek}\n"
-                                    "Proszę zacząć od:\n• Wody\n• Mięsa\n• Podrobów\n• tłuszczu\n• Tauryny\n"
-                                    "Proszę przygotować dietę tylko z ich zawartością i na razie pominąć pozostałe suplementy.\n\n"
-                                    "Jak Kicia będzie się dobrze czuła, na następny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
-                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
-                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
-                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
-                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
-                                    "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
-                                    "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Witaminy E\n• Witamin B\n• Jodu\n"
-                                    "• Dodatkowo: [Przeanalizuj transkrypcję. Wypisz po przecinku zalecane dodatki medyczne, które Anna wymieniła na ten krok diety. Jeśli w transkrypcji nie ma mowy o dodatkach celowanych dla tego tygodnia, wstaw sztywno tekst: [BRAK INFORMACJI]]\n\n"
-                                    "To będzie już kompletna dieta."
-                                )
+                                instrukcja_szablonu += f"## {naglowek}\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
+                            elif naglowek == "Aktualne badania:":
+                                instrukcja_szablonu += f"## {naglowek}\n- Wypisz wyłącznie podyktowane w transkrypcji parametry i badania. Jeśli Anna porównuje wyniki historyczne (np. styczeń vs kwiecień), przedstaw je w postaci czytelnych punktów dla każdego narządu/parametru. Jeśli dla jakiegoś narządu brak danych, pomiń go. Nie wyliczaj niczego samodzielnie.\n"
+                            elif naglowek == "Badania kontrolne:":
+                                instrukcja_szablonu += f"## {naglowek}\n- Przedstaw zalecane przez Annę badania kontrolne w formie czystej listy punktów wraz z przypisanymi im w transkrypcji terminami (np. za 3 miesiące, za pół roku). Jeśli brak podanego terminu lub badań w tekście rozmowy, wstaw sztywno [BRAK INFORMACJI].\n"
                             else:
                                 prefix = "" if naglowek.startswith("###") else "## "
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Uzupełnij precyzyjnymi faktami medycznymi z transkrypcji.\n"
 
-                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
+                        p = f"Przeanalizuj podaną transkrypcję wizyty.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nZAKAZ bezwarunkowego umieszczania linków. Przeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy pacjent w transkrypcji cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja:\n{transcript}"
                         
                         res = m.generate_content(p)
                         st.text_area("Podgląd tekstu wynikowego:", value=res.text, height=350, key="podglad_gen")
