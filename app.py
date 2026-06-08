@@ -7,7 +7,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
 
-# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA ZGODNIE Z PROWADZONĄ PRAKTYKĄ ---
+# --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA 1:1 Z DOKUMENTEM ---
 STRUKTURA_PROTOKOLU = [
     "Powód konsultacji:", "Aktualne samopoczucie:", "Aktywność:", "Apetyt:", "Pragnienie:",
     "Dotychczasowe żywienie:", "Smaczki i przysmaki:", "Ulubione smaki:",
@@ -77,7 +77,7 @@ def add_hyperlink(p, url, text):
     r_id = part.relate_to(url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True)
     hl = OxmlElement('w:hyperlink'); hl.set(qn('r:id'), r_id)
     nr = OxmlElement('w:r'); rPr = OxmlElement('w:rPr')
-    c = OxmlElement('w:color'); c.set(qn('w:val'), '4D6C70'); rPr.append(c) # Dostosowanie koloru linku w Wordzie pod styl
+    c = OxmlElement('w:color'); c.set(qn('w:val'), '4D6C70'); rPr.append(c)
     u = OxmlElement('w:u'); u.set(qn('w:val'), 'single'); rPr.append(u)
     nr.append(rPr); tn = OxmlElement('w:t'); tn.text = text; nr.append(tn); hl.append(nr); p._p.append(hl)
     return hl
@@ -144,7 +144,7 @@ def konwertuj_do_docx(tekst_md):
         if l_s.startswith('## '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(14), Pt(4)
             czysty_h2 = l_s.replace('## ', '').replace('**', '')
-            r = p.add_run(czysty_h2); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(77, 108, 112) # Zmiana na kolor przewodzący marki
+            r = p.add_run(czysty_h2); r.bold = True; r.font.size, r.font.color.rgb = Pt(12), RGBColor(77, 108, 112)
         elif l_s.startswith('### '):
             p = doc.add_paragraph(); p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(8), Pt(2)
             czysty_h3 = l_s.replace('### ', '').replace('**', '')
@@ -174,19 +174,19 @@ def konwertuj_do_docx(tekst_md):
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 # ==============================================================================
-# 🎨 INTEGRACJA BRANDINGU WIZUALNEGO MEATPOINT (#F9F7F2, #4D6C70)
+# 🎨 TOTALNA, RESTRYKCYJNA NADPISKA STYLÓW CSS (BEZWZGLĘDNY PRIORYTET)
 # ==============================================================================
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
 
 st.markdown("""
     <style>
-        /* Tło głównej strony oraz bocznego panelu */
-        .stApp, [data-testid="stSidebar"] {
+        /* Nadpisanie tła całej aplikacji, głównego kontenera i bocznego menu */
+        .stApp, html, body, [data-testid="stSidebar"], [data-testid="stHeader"], .main .block-container {
             background-color: #F9F7F2 !important;
         }
         
-        /* Kolorystyka i czytelność tekstów głównych */
-        h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, span {
+        /* Nadpisanie wszystkich kolorów czcionek na ciemny grafit */
+        h1, h2, h3, h4, h5, h6, p, label, li, span, div, th, td {
             color: #1E293B !important;
             font-family: 'Inter', sans-serif !important;
         }
@@ -195,47 +195,57 @@ st.markdown("""
         button[data-baseweb="tab"] {
             color: #64748B !important;
             font-weight: 600 !important;
+            background-color: transparent !important;
         }
         button[data-baseweb="tab"][aria-selected="true"] {
             color: #4D6C70 !important;
-            border-bottom-color: #4D6C70 !important;
+            border-bottom: 3px solid #4D6C70 !important;
         }
         
-        /* Zaokrąglenia i obramowania pól tekstowych text_area */
+        /* Stylizacja dużych pól tekstowych (text_area) */
         .stTextArea textarea {
             background-color: #FFFFFF !important;
-            border: 1px solid #CBD5E1 !important;
+            border: 2px solid #CBD5E1 !important;
             border-radius: 12px !important;
             color: #1E293B !important;
         }
+        /* Efekt podświetlenia pola tekstowego przy kliknięciu */
         .stTextArea textarea:focus {
             border-color: #4D6C70 !important;
-            box-shadow: 0 0 0 1px #4D6C70 !important;
+            box-shadow: 0 0 0 2px #4D6C70 !important;
         }
         
-        /* Zaawansowana stylizacja przycisków Streamlit (Główny akcent marki) */
+        /* Pełna stylizacja i zaokrąglenie przycisków marki MeatPoint */
         div.stButton > button {
             background-color: #4D6C70 !important;
             color: #FFFFFF !important;
             border-radius: 12px !important;
             border: none !important;
             font-weight: 600 !important;
-            padding: 0.5rem 1.5rem !important;
-            transition: all 0.3s ease !important;
+            padding: 0.6rem 2rem !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+            transition: all 0.2s ease-in-out !important;
         }
         div.stButton > button:hover {
-            background-color: #3D5659 !important;
+            background-color: #3B5457 !important;
             color: #FFFFFF !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
             transform: translateY(-1px) !important;
         }
-        
-        /* Stylizacja pól przesyłania plików */
-        [data-testid="stFileUploader"] {
-            background-color: #FFFFFF !important;
-            border: 1px dashed #4D6C70 !important;
-            border-radius: 12px !important;
-            padding: 10px !important;
+        div.stButton > button:active {
+            transform: translateY(1px) !important;
         }
+        
+        /* Zaokrąglenie selectboxów oraz inputów autoryzacji */
+        .stTextInput input, .stSelectbox div[data-baseweb="select"] {
+            border-radius: 12px !important;
+            background-color: #FFFFFF !important;
+            border: 1px solid #CBD5E1 !important;
+            color: #1E293B !important;
+        }
+        
+        /* Ukrycie domyślnego menu Streamlita na górze dla czystego efektu */
+        #MainMenu, footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -244,7 +254,7 @@ with st.sidebar:
     api_key = st.text_input("Klucz API Gemini", type="password")
     model_choice = st.selectbox("Wybierz model", ["gemini-3.5-flash", "gemini-3.1-pro"])
 
-# Aktualizacja nazw nagłówków zakładek 1:1 z wytycznymi
+# Zmiana nazw samych zakładek na żądane formy
 tab1, tab2 = st.tabs(["🐾 Generator opisów wizyt", "🎙️ Edytor głosowy opisów wizyt"])
 
 # ==============================================================================
