@@ -178,7 +178,18 @@ st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", p
 with st.sidebar:
     st.header("🔑 Autoryzacja")
     api_key = st.text_input("Klucz API Gemini", type="password")
-    model_choice = st.selectbox("Wybierz model", ["gemini-1.5-flash", "gemini-1.5-pro"])
+    
+    # 🌟 ZAKTUALIZOWANA LISTA: Pełen przekrój generacji modeli od 1.5 do najnowszych 3.5
+    model_choice = st.selectbox(
+        "Wybierz model", 
+        [
+            "gemini-3.5-flash", 
+            "gemini-3.1-pro", 
+            "gemini-3.1-flash-lite", 
+            "gemini-1.5-pro", 
+            "gemini-1.5-flash"
+        ]
+    )
 
 tab1, tab2 = st.tabs(["🚀 Generator opisów wizyt (Wklej Tekst)", "🎙️ Edytor głosowy opisów wizyt"])
 
@@ -226,7 +237,7 @@ with tab1:
                                 "Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. "
                                 "Twoim zadaniem jest stworzenie jednego, spójnego protokołu na podstawie dwóch źródeł: ustnej transkrypcji oraz przesłanych dokumentów/zdjęć (załączników).\n\n"
                                 "ZASADA INTELIGENTNEGO DOPASOWANIA (CROSS-ANALYSIS):\n"
-                                "1. Przeanalizuj treść każdego załącznika. Informacje w nich zawarte mogą dotyczyć DOWOLNEY sekcji protokołu (notatki o wodzie, uwagi o smaczkach, dawki leków, opisy samopoczucia, wyniki badań).\n"
+                                "1. Przeanalizuj treść każdego załącznika. Informacje w nich zawarte mogą dotyczyć DOWOLNEJ sekcji protokołu (notatki o wodzie, uwagi o smaczkach, dawki leków, opisy samopoczucia, wyniki badań).\n"
                                 "2. NIE wrzucaj wszystkiego z załączników do sekcji 'Aktualne badania'. Przyporządkuj fakty tematycznie: informacje o diecie komercyjnej do 'Karmy komercyjne', informacje o dawkowaniu wody do 'Piciu/Jakiej wody używać', wyniki krwi do 'Aktualne badania', a opisy dolegliwości do 'Powód konsultacji' lub 'Kał/Biegunka/Wymioty'.\n"
                                 "3. Zintegruj wiedzę z transkrypcji i załączników. Jeśli dokumenty i transkrypcja mówią o tym samym, połącz te fakty w spójny, medyczny opis.\n\n"
                                 "ZASADY OGÓLNE:\n"
