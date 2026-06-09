@@ -25,7 +25,7 @@ TEKST_TYNDALIZACJA_STALY = (
     "Jeżeli robią Państwo dietę na dłużej niż 5-6 dni (mowa o diecie surowej) i chcą Państwo "
     "ją bezpiecznie przechowywać w słoiczkach w lodówce (bez zamrażania) LUB przygotowują Państwo "
     "dietę gotowaną (BACF) na zapas, konieczne jest przeprowadzenie procesu tyndalizacji (potrójnej pasteryzacji).\n\n"
-    "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
+    "Proces flagging ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
     "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
     "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
@@ -178,8 +178,6 @@ st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", p
 with st.sidebar:
     st.header("🔑 Autoryzacja")
     api_key = st.text_input("Klucz API Gemini", type="password")
-    
-    # 🌟 ZAKTUALIZOWANA LISTA: Pełen przekrój generacji modeli od 1.5 do najnowszych 3.5
     model_choice = st.selectbox(
         "Wybierz model", 
         [
@@ -198,17 +196,17 @@ tab1, tab2 = st.tabs(["🚀 Generator opisów wizyt (Wklej Tekst)", "🎙️ Edy
 # ==============================================================================
 with tab1:
     st.title("🐾 Generator opisów wizyt")
-    st.markdown("Wklej transkrypcję i dołącz dowolne załączniki (notatki, stare plany, wyniki badań w PDF lub zdjęciach). AI inteligentnie przyporządkuje informacje do odpowiednich sekcji.")
+    st.markdown("Wklej transkrypcję i dołącz dowolne załączniki (notatki, stare plany, wyniki badań w PDF, zdjęciach lub plikach Word .docx). AI inteligentnie przyporządkuje informacje do odpowiednich sekcji.")
     
     col1, col2 = st.columns([1, 1], gap="large")
     
     with col1:
         transcript = st.text_area("🔊 Wklej tutaj kompletną transkrypcję z rozmowy:", height=380, key="surowy_wklejony_tekst")
         
-        # Uniwersalny uploader na wszelkiego rodzaju dokumenty od opiekuna
+        # 🚨 POPRAWKA: Rozszerzyliśmy listę o format "docx"
         zalaczniki = st.file_uploader(
-            "📂 Dołącz załączniki (PDF, notatki, zdjęcia dokumentacji, wyniki badań itp.):", 
-            type=["pdf", "png", "jpg", "jpeg"], 
+            "📂 Dołącz załączniki (PDF, Word .docx, notatki, zdjęcia dokumentacji itp.):", 
+            type=["pdf", "png", "jpg", "jpeg", "docx"], 
             accept_multiple_files=True,
             key="pliki_kliniczne"
         )
@@ -235,15 +233,15 @@ with tab1:
                             model_name=model_choice, 
                             system_instruction=(
                                 "Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. "
-                                "Twoim zadaniem jest stworzenie jednego, spójnego protokołu na podstawie dwóch źródeł: ustnej transkrypcji oraz przesłanych dokumentów/zdjęć (załączników).\n\n"
+                                "Twoim zadaniem jest stworzenie jednego, spójnego protokołu na podstawie trzech źródeł: ustnej transkrypcji, przesłanych dokumentów/zdjęć (załączników) oraz zewnętrznych tekstów wyekstrahowanych z plików Word.\n\n"
                                 "ZASADA INTELIGENTNEGO DOPASOWANIA (CROSS-ANALYSIS):\n"
                                 "1. Przeanalizuj treść każdego załącznika. Informacje w nich zawarte mogą dotyczyć DOWOLNEJ sekcji protokołu (notatki o wodzie, uwagi o smaczkach, dawki leków, opisy samopoczucia, wyniki badań).\n"
-                                "2. NIE wrzucaj wszystkiego z załączników do sekcji 'Aktualne badania'. Przyporządkuj fakty tematycznie: informacje o diecie komercyjnej do 'Karmy komercyjne', informacje o dawkowaniu wody do 'Piciu/Jakiej wody używać', wyniki krwi do 'Aktualne badania', a opisy dolegliwości do 'Powód konsultacji' lub 'Kał/Biegunka/Wymioty'.\n"
+                                "2. Przyporządkuj fakty tematycznie: informacje o diecie komercyjnej do 'Karmy komercyjne', informacje o dawkowaniu wody do 'Piciu/Jakiej wody używać', wyniki krwi do 'Aktualne badania', a opisy dolegliwości do 'Powód konsultacji' lub 'Kał/Biegunka/Wymioty'.\n"
                                 "3. Zintegruj wiedzę z transkrypcji i załączników. Jeśli dokumenty i transkrypcja mówią o tym samym, połącz te fakty w spójny, medyczny opis.\n\n"
                                 "ZASADY OGÓLNE:\n"
                                 "- Pisz WYŁĄCZNIE absolutną prawdę na podstawie dostarczonych materiałów. ZAKAZ zmyślania faktów czy dawek.\n"
                                 "- Jeśli chcesz coś wyróżnić medycznie, używaj podwójnych gwiazdek **tekst**.\n"
-                                "- Jeśli w obu źródłach brakuje danych dla danej sekcji, wstaw fragment [BRAK INFORMACJI]."
+                                "- Jeśli w źródłach brakuje danych dla danej sekcji, wstaw fragment [BRAK INFORMACJI]."
                             )
                         )
                         
@@ -266,17 +264,29 @@ with tab1:
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Analizuj pod kątem tego nagłówka zarówno tekst transkrypcji, jak i dołączone pliki załączników. Wyciągnij precyzyjne fakty.\n"
 
                         pakiety_danych_dla_ai = []
+                        teksty_z_docx = ""
                         
-                        # Mapowanie plików binarnego bloba dla Gemini
+                        # 🚨 NOWOŚĆ: Logika rozróżniania plików binarnych i parsowania .docx
                         if zalaczniki:
                             for plik in zalaczniki:
-                                bytes_data = plik.read()
-                                pakiety_danych_dla_ai.append({
-                                    "mime_type": plik.type,
-                                    "data": bytes_data
-                                })
+                                if plik.name.endswith(".docx"):
+                                    # Czytamy strukturę Worda i zamieniamy ją na czysty tekst dla promptu
+                                    doc_ctx = Document(BytesIO(plik.read()))
+                                    akapit_tekst = [p.text for p in doc_ctx.paragraphs if p.text.strip()]
+                                    teksty_z_docx += f"\n--- ZAWARTOŚĆ DOŁĄCZONEGO PLIKU WORD ({plik.name}) ---\n" + "\n".join(akapit_tekst) + "\n"
+                                else:
+                                    # PDF i zdjęcia lecą tradycyjnie jako obiekty multimodalne (Blob)
+                                    bytes_data = plik.read()
+                                    pakiety_danych_dla_ai.append({
+                                        "mime_type": plik.type,
+                                        "data": bytes_data
+                                    })
                         
-                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja rozmowy:\n{transcript}"
+                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja rozmowy:\n{transcript}\n"
+                        
+                        # Jeśli Ania wgrała pliki Worda, doklejamy ich zawartość bezpośrednio do promptu tekstowego
+                        if teksty_z_docx:
+                            prompt_glowny += f"\nDodatkowe dokumenty tekstowe przesłane w załącznikach Word:\n{teksty_z_docx}"
                         
                         pakiety_danych_dla_ai.append(prompt_glowny)
                         
