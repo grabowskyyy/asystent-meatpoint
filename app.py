@@ -25,7 +25,7 @@ TEKST_TYNDALIZACJA_STALY = (
     "Jeżeli robią Państwo dietę na dłużej niż 5-6 dni (mowa o diecie surowej) i chcą Państwo "
     "ją bezpiecznie przechowywać w słoiczkach w lodówce (bez zamrażania) LUB przygotowują Państwo "
     "dietę gotowaną (BACF) na zapas, konieczne jest przeprowadzenie procesu tyndalizacji (potrójnej pasteryzacji).\n\n"
-    "Proces flagging ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
+    "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
     "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
     "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
@@ -189,6 +189,17 @@ with st.sidebar:
         ]
     )
 
+    # Okienko bezpieczeństwa danych i RODO dla zewnętrznych lekarzy/dietetyków
+    st.markdown("---")
+    st.info(
+        "🛡️ **Bezpieczeństwo danych pacjenta:**\n\n"
+        "Narzędzie przetwarza dane w bezpiecznym, szyfrowanym strumieniu bezpośrednio przez oficjalne Google Gemini API.\n\n"
+        "• Transkrypcje i załączniki **NIE** są zapisywane na serwerach.\n"
+        "• Dane **NIE** są wykorzystywane do trenowania modeli AI.\n"
+        "• Po zamknięciu karty przeglądarki cała sesja bezpowrotnie znika z pamięci.",
+        icon="🔒"
+    )
+
 tab1, tab2 = st.tabs(["🚀 Generator opisów wizyt (Wklej Tekst)", "🎙️ Edytor głosowy opisów wizyt"])
 
 # ==============================================================================
@@ -203,7 +214,6 @@ with tab1:
     with col1:
         transcript = st.text_area("🔊 Wklej tutaj kompletną transkrypcję z rozmowy:", height=380, key="surowy_wklejony_tekst")
         
-        # 🚨 POPRAWKA: Rozszerzyliśmy listę o format "docx"
         zalaczniki = st.file_uploader(
             "📂 Dołącz załączniki (PDF, Word .docx, notatki, zdjęcia dokumentacji itp.):", 
             type=["pdf", "png", "jpg", "jpeg", "docx"], 
@@ -266,16 +276,13 @@ with tab1:
                         pakiety_danych_dla_ai = []
                         teksty_z_docx = ""
                         
-                        # 🚨 NOWOŚĆ: Logika rozróżniania plików binarnych i parsowania .docx
                         if zalaczniki:
                             for plik in zalaczniki:
                                 if plik.name.endswith(".docx"):
-                                    # Czytamy strukturę Worda i zamieniamy ją na czysty tekst dla promptu
                                     doc_ctx = Document(BytesIO(plik.read()))
                                     akapit_tekst = [p.text for p in doc_ctx.paragraphs if p.text.strip()]
                                     teksty_z_docx += f"\n--- ZAWARTOŚĆ DOŁĄCZONEGO PLIKU WORD ({plik.name}) ---\n" + "\n".join(akapit_tekst) + "\n"
                                 else:
-                                    # PDF i zdjęcia lecą tradycyjnie jako obiekty multimodalne (Blob)
                                     bytes_data = plik.read()
                                     pakiety_danych_dla_ai.append({
                                         "mime_type": plik.type,
@@ -284,7 +291,6 @@ with tab1:
                         
                         prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja rozmowy:\n{transcript}\n"
                         
-                        # Jeśli Ania wgrała pliki Worda, doklejamy ich zawartość bezpośrednio do promptu tekstowego
                         if teksty_z_docx:
                             prompt_glowny += f"\nDodatkowe dokumenty tekstowe przesłane w załącznikach Word:\n{teksty_z_docx}"
                         
