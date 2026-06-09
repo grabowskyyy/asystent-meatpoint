@@ -189,15 +189,14 @@ with st.sidebar:
         ]
     )
 
-    # Okienko bezpieczeństwa danych i RODO dla zewnętrznych lekarzy/dietetyków
+    # 🚨 POPRAWKA: Przebudowany tekst z jawnym formatowaniem nowej linii dla parsera Markdown
     st.markdown("---")
     st.info(
-        "🛡️ **Bezpieczeństwo danych pacjenta:**\n\n"
+        "🔒 **Bezpieczeństwo danych pacjenta:**\n\n"
         "Narzędzie przetwarza dane w bezpiecznym, szyfrowanym strumieniu bezpośrednio przez oficjalne Google Gemini API.\n\n"
-        "• Transkrypcje i załączniki **NIE** są zapisywane na serwerach.\n"
-        "• Dane **NIE** są wykorzystywane do trenowania modeli AI.\n"
-        "• Po zamknięciu karty przeglądarki cała sesja bezpowrotnie znika z pamięci.",
-        icon="🔒"
+        "- Transkrypcje i załączniki **NIE** są zapisywane na serwerach.\n\n"
+        "- Dane **NIE** są wykorzystywane do trenowania modeli AI.\n\n"
+        "- Po zamknięciu karty przeglądarki cała sesja bezpowrotnie znika z pamięci."
     )
 
 tab1, tab2 = st.tabs(["🚀 Generator opisów wizyt (Wklej Tekst)", "🎙️ Edytor głosowy opisów wizyt"])
