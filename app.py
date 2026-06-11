@@ -27,7 +27,7 @@ TEKST_TYNDALIZACJA_STALY = (
     "dietę gotowaną (BACF) na zapas, konieczne jest przeprowadzenie procesu tyndalizacji (potrójnej pasteryzacji).\n\n"
     "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
-    "Pełną instrukcję krok po krok, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
+    "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
     "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
     "Dodatkowo przygotowaliśmy dla Państwa praktyczny poradnik w formie wideo na platformie YouTube, "
     "gdzie pokazujemy cały proces krok po kroku: https://www.youtube.com/watch?v=tyfT3kmq3ME"
@@ -371,38 +371,34 @@ with tab2:
                 if st.button("🚀 WPROWADŹ WSZYSTKIE POPRAWKI GŁOSOWE (HURTOWO)", type="primary", use_container_width=True):
                     if not api_key: st.error("❌ Podaj klucz API Gemini!")
                     else:
-                        with St.spinner("Przetwarzanie audio i wdrażanie poprawek..."):
+                        # 🚨 NAPRAWIONO: Zmiana 'St.spinner' na 'st.spinner'
+                        with st.spinner("Przetwarzanie audio i wdrażanie poprawek..."):
                             try:
                                 genai.configure(api_key=api_key)
-                                # Wymuszamy najnowszy, szybki model do stabilnej zamiany mowy na tekst
                                 model_transkrypcji = genai.GenerativeModel(model_name="gemini-2.5-flash")
                                 model_edytor = genai.GenerativeModel(model_name=model_choice)
                                 
                                 for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items()):
-                                    # KROK 1: Stabilna, natywna paczka bajtów bezpośrednio dla API Google
                                     audio_part = genai.types.Part.from_bytes(
                                         data=a_bytes,
                                         mime_type="audio/wav"
                                     )
                                     
-                                    # Zamieniamy mowę Ani na tekst w ułamku sekundy
                                     p_trans = "Przetwórz to nagranie audio i zwróć dokładny tekst (transkrypcję) tego, co zostało powiedziane, słowo w słowo, po polsku."
                                     transkrypcja_uwagi = model_transkrypcji.generate_content([p_trans, audio_part]).text.strip()
                                     
-                                    # KROK 2: Wysyłamy lekki prompt tekstowy (brak zawieszeń sesji)
                                     p_ed = (
                                         f"Jesteś precyzyjnym asystentem medycznym BARF/BACF.\n"
                                         f"Zmień poniższy tekst sekcji '{s_nazwa}' w oparciu o podyktowaną uwagę opiekuna medycznego.\n\n"
                                         f"Oryginalna treść sekcji:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\n"
                                         f"Podyktowana uwaga do wdrożenia:\n{transkrypcja_uwagi}\n\n"
-                                        f"ZASADA: Wprowadź korektę, zachowaj styl medyczny. Zwróć wyłącznie sformatowaną, czystą treść nowej sekcji bez żadnych komentarzy."
+                                        f"ZASADA: Wprowadź korektę, zachowaj style medyczny. Zwróć wyłącznie sformatowaną, czystą treść nowej sekcji bez żadnych komentarzy."
                                     )
                                     
                                     response_edycja = model_edytor.generate_content(p_ed)
                                     st.session_state.sekcje_dokumentu[s_nazwa] = response_edycja.text.strip()
                                     st.session_state.klucze_mikrofonow[s_nazwa] = str(uuid.uuid4())
                                 
-                                # Czyszczenie koszyka po pomyślnym zakończeniu operacji
                                 st.session_state.koszyk_nagran = {}
                                 st.success("🎉 Wszystkie poprawki pomyślnie wprowadzone w ułamku sekundy!")
                                 st.rerun()
