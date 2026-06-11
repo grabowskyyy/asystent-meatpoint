@@ -1,4 +1,4 @@
-import streamlit as st, google.generativeai as genai, os, re, pandas as pd, uuid
+import streamlit as st, google.generativeai as genai, os, re, pandas as pd, uuid, base64
 from io import BytesIO
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
@@ -189,7 +189,6 @@ with st.sidebar:
         ]
     )
 
-    # 🚨 POPRAWKA: Przebudowany tekst z jawnym formatowaniem nowej linii dla parsera Markdown
     st.markdown("---")
     st.info(
         "🔒 **Bezpieczeństwo danych pacjenta:**\n\n"
@@ -288,7 +287,7 @@ with tab1:
                                         "data": bytes_data
                                     })
                         
-                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja rozmowy:\n{transcript}\n"
+                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryckką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja rozmowy:\n{transcript}\n"
                         
                         if teksty_z_docx:
                             prompt_glowny += f"\nDodatkowe dokumenty tekstowe przesłane w załącznikach Word:\n{teksty_z_docx}"
@@ -303,7 +302,7 @@ with tab1:
                         st.error(f"🚨 Błąd generatora: {e}")
 
 # ==============================================================================
-# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW
+# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (BEZBŁĘDNA OBSŁUGA AUDIO)
 # ==============================================================================
 with tab2:
     st.title("🎙️ Edytor głosowy opisów wizyt")
@@ -378,12 +377,23 @@ with tab2:
                                 model_edytor = genai.GenerativeModel(model_name=model_choice)
                                 
                                 for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items()):
-                                    p_ed = f"Zmodyfikuj oryginalny tekst sekcji '{s_nazwa}' na podstawie instrukcji głosowych.\nTekst:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\nZWROT WYŁĄCZNIE zaktualizowany tekst medyczny bez żadnych komentarzy ani wstępów."
-                                    a_part = {"data": a_bytes, "mime_type": "audio/wav"}
+                                    # 🚨 FIX: Konwertujemy surowe bajty audio na Base64 przed wysyłką do API
+                                    base64_audio = base64.b64encode(a_bytes).decode("utf-8")
+                                    
+                                    p_ed = (
+                                        f"Przeanalizuj dołączone nagranie instrukcji głosowych i bezwzględnie zaktualizuj tekst oryginalny dla sekcji '{s_nazwa}'.\n"
+                                        f"Oryginalna treść medyczna:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\n"
+                                        f"ZASADA: Wprowadź zmiany dyktowane głosowo, zachowując profesjonalny, kliniczny ton BARF/BACF. "
+                                        f"Zwróć TYLKO I WYŁĄCZNIE zaktualizowany tekst medyczny sekcji (bez żadnych wstępów czy komentarzy)."
+                                    )
+                                    
+                                    a_part = {"data": base64_audio, "mime_type": "audio/wav"}
                                     response_edycja = model_edytor.generate_content([p_ed, a_part])
                                     st.session_state.sekcje_dokumentu[s_nazwa] = response_edycja.text.strip()
                                     st.session_state.klucze_mikrofonow[s_nazwa] = str(uuid.uuid4())
                                 
+                                # Czyszczenie koszyka po udanej operacji
+                                st.session_state.koszyk_nagran = {}
                                 st.success("🎉 Wszystkie sekcje zostały pomyślnie zaktualizowane!")
                                 st.rerun()
                             except Exception as e: st.error(f"🚨 Błąd edytora: {e}")
