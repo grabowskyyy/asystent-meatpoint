@@ -256,7 +256,7 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa disposition.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
@@ -371,7 +371,6 @@ with tab2:
                 if st.button("🚀 WPROWADŹ WSZYSTKIE POPRAWKI GŁOSOWE (HURTOWO)", type="primary", use_container_width=True):
                     if not api_key: st.error("❌ Podaj klucz API Gemini!")
                     else:
-                        # 🚨 NAPRAWIONO: Zmiana 'St.spinner' na 'st.spinner'
                         with st.spinner("Przetwarzanie audio i wdrażanie poprawek..."):
                             try:
                                 genai.configure(api_key=api_key)
@@ -379,10 +378,11 @@ with tab2:
                                 model_edytor = genai.GenerativeModel(model_name=model_choice)
                                 
                                 for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items()):
-                                    audio_part = genai.types.Part.from_bytes(
-                                        data=a_bytes,
-                                        mime_type="audio/wav"
-                                    )
+                                    # 🚨 NAPRAWIONO: Niezawodny, uniwersalny format przekazywania audio (MIME + RAW DATA)
+                                    audio_part = {
+                                        "mime_type": "audio/wav",
+                                        "data": a_bytes
+                                    }
                                     
                                     p_trans = "Przetwórz to nagranie audio i zwróć dokładny tekst (transkrypcję) tego, co zostało powiedziane, słowo w słowo, po polsku."
                                     transkrypcja_uwagi = model_transkrypcji.generate_content([p_trans, audio_part]).text.strip()
@@ -392,7 +392,7 @@ with tab2:
                                         f"Zmień poniższy tekst sekcji '{s_nazwa}' w oparciu o podyktowaną uwagę opiekuna medycznego.\n\n"
                                         f"Oryginalna treść sekcji:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\n"
                                         f"Podyktowana uwaga do wdrożenia:\n{transkrypcja_uwagi}\n\n"
-                                        f"ZASADA: Wprowadź korektę, zachowaj style medyczny. Zwróć wyłącznie sformatowaną, czystą treść nowej sekcji bez żadnych komentarzy."
+                                        f"ZASADA: Wprowadź korektę, zachowaj styl medyczny. Zwróć wyłącznie sformatowaną, czystą treść nowej sekcji bez żadnych komentarzy."
                                     )
                                     
                                     response_edycja = model_edytor.generate_content(p_ed)
