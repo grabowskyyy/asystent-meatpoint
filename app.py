@@ -427,7 +427,7 @@ with tab2:
 
                         try:
                             # Przetwarzaj wszystkie nagrania równolegle (max 5 wątków)
-                            with ThreadPoolExecutor(max_workers=min(5, liczba_nagran)) as executor:
+                            with ThreadPoolExecutor(max_workers=min(10, liczba_nagran)) as executor:
                                 futures = {
                                     executor.submit(przetworz_jedno_nagranie, zadanie): zadanie[0]
                                     for zadanie in zadania
