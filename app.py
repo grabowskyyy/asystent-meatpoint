@@ -6,6 +6,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from streamlit_mic_recorder import mic_recorder
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- KOMPLETNA STRUKTURA I UNIFIKACJA NAZEWNICTWA 1:1 Z DOKUMENTEM ANI ---
 STRUKTURA_PROTOKOLU = [
@@ -173,6 +174,39 @@ def konwertuj_do_docx(tekst_md):
             
     b = BytesIO(); doc.save(b); return b.getvalue()
 
+
+def przetworz_jedno_nagranie(args):
+    """
+    Przetwarza jedno nagranie audio: transkrypcja + edycja sekcji.
+    Zwraca (nazwa_sekcji, nowa_treść) lub rzuca wyjątek.
+    """
+    s_nazwa, a_bytes, oryginalna_tresc, api_key, model_choice = args
+
+    genai.configure(api_key=api_key)
+
+    # Krok 1: transkrypcja audio (zawsze flash — szybki i tani)
+    model_transkrypcji = genai.GenerativeModel(model_name="gemini-2.5-flash")
+    audio_part = {"mime_type": "audio/wav", "data": a_bytes}
+    p_trans = "Przetwórz to nagranie audio i zwróć dokładny tekst (transkrypcję) tego, co zostało powiedziane, słowo w słowo, po polsku."
+    transkrypcja_uwagi = model_transkrypcji.generate_content([p_trans, audio_part]).text.strip()
+
+    # Krok 2: integracja uwagi z oryginalną treścią sekcji
+    model_edytor = genai.GenerativeModel(model_name=model_choice)
+    p_ed = (
+        f"Jesteś precyzyjnym edytorem dokumentacji medycznej zwierząt BARF/BACF.\n"
+        f"Zaktualizuj oryginalny tekst sekcji '{s_nazwa}' wyłącznie o fakty podyktowane w uwadze głosowej.\n\n"
+        f"Oryginalna treść sekcji:\n{oryginalna_tresc}\n\n"
+        f"Podyktowana uwaga głosowa:\n{transkrypcja_uwagi}\n\n"
+        f"ZASADY:\n"
+        f"1. Dołącz NOWE fakty z uwagi głosowej, zachowując spójność z oryginałem.\n"
+        f"2. ZAKAZ dodawania własnych zaleceń, komentarzy AI ani wniosków.\n"
+        f"3. ZAKAZ wstępów i podsumowań ('Oto zaktualizowana sekcja:' itp.).\n"
+        f"4. Zwróć WYŁĄCZNIE czystą, zaktualizowaną treść sekcji."
+    )
+    nowa_tresc = model_edytor.generate_content(p_ed).text.strip()
+    return s_nazwa, nowa_tresc
+
+
 st.set_page_config(page_title="MeatPoint - Asystent Dietetyka", layout="wide", page_icon="🐾")
 
 with st.sidebar:
@@ -201,7 +235,7 @@ with st.sidebar:
 tab1, tab2 = st.tabs(["🚀 Generator opisów wizyt (Wklej Tekst)", "🎙️ Edytor głosowy opisów wizyt"])
 
 # ==============================================================================
-# 🚀 ZAKŁADKA 1: INTELIGENTNY GENERATOR MULTIMODALNY (TRANSSKRYPCJA + GLOBALNE ZAŁĄCZNIKI)
+# 🚀 ZAKŁADKA 1
 # ==============================================================================
 with tab1:
     st.title("🐾 Generator opisów wizyt")
@@ -302,7 +336,7 @@ with tab1:
                         st.error(f"🚨 Błąd generatora: {e}")
 
 # ==============================================================================
-# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (Rygorystyczne kryteria wdrożenia poprawek)
+# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW — RÓWNOLEGŁE PRZETWARZANIE
 # ==============================================================================
 with tab2:
     st.title("🎙️ Edytor głosowy opisów wizyt")
@@ -371,42 +405,75 @@ with tab2:
                 if st.button("🚀 WPROWADŹ WSZYSTKIE POPRAWKI GŁOSOWE (HURTOWO)", type="primary", use_container_width=True):
                     if not api_key: st.error("❌ Podaj klucz API Gemini!")
                     else:
-                        with st.spinner("Przetwarzanie audio i wdrażanie poprawek..."):
-                            try:
-                                genai.configure(api_key=api_key)
-                                model_transkrypcji = genai.GenerativeModel(model_name="gemini-2.5-flash")
-                                model_edytor = genai.GenerativeModel(model_name=model_choice)
-                                
-                                for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items()):
-                                    audio_part = {
-                                        "mime_type": "audio/wav",
-                                        "data": a_bytes
-                                    }
-                                    
-                                    p_trans = "Przetwórz to nagranie audio i zwróć dokładny tekst (transkrypcję) tego, co zostało powiedziane, słowo w słowo, po polsku."
-                                    transkrypcja_uwagi = model_transkrypcji.generate_content([p_trans, audio_part]).text.strip()
-                                    
-                                    # 🚨 DOKRĘCENIE ŚRUBY: Rygorystyczny, bezkompromisowy prompt modyfikacji klinicznej
-                                    p_ed = (
-                                        f"Jesteś precyzyjnym edytorem dokumentacji medycznej zwierząt BARF/BACF.\n"
-                                        f"Twoim jedynym zadaniem jest zaktualizowanie oryginalnego tekstu sekcji '{s_nazwa}' wyłącznie o fakty, które zostały podyktowane w uwadze głosowej.\n\n"
-                                        f"Oryginalna treść sekcji:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\n"
-                                        f"Podyktowana uwaga głosowa (Słuchaj uważnie i zintegruj te dane):\n{transkrypcja_uwagi}\n\n"
-                                        f"🚨 RYGORYSTYCZNE ZASADY BEZPIECZEŃSTWA (ZAKAZ HALUCYNACJI):\n"
-                                        f"1. Dołącz NOWE fakty z uwagi głosowej, odpowiednio układając je składniowo, gramatycznie i logicznie z oryginalną treścią.\n"
-                                        f"2. ZAKAZ dodawania jakichkolwiek własnych zaleceń, teorii dietetycznych, komentarzy, dopisków od AI czy wniosków niewyrażonych wprost.\n"
-                                        f"3. ZAKAZ pisania jakichkolwiek uprzejmości, wstępów czy podsumowań typu 'Oto zaktualizowana sekcja:'.\n"
-                                        f"4. Zwróć wyłącznie czystą, zaktualizowaną treść medyczną sekcji (tekst lub punkty)."
-                                    )
-                                    
-                                    response_edycja = model_edytor.generate_content(p_ed)
-                                    st.session_state.sekcje_dokumentu[s_nazwa] = response_edycja.text.strip()
-                                    st.session_state.klucze_mikrofonow[s_nazwa] = str(uuid.uuid4())
-                                
-                                st.session_state.koszyk_nagran = {}
-                                st.success("🎉 Wszystkie poprawki pomyślnie wprowadzone w ułamku sekundy!")
-                                st.rerun()
-                            except Exception as e: st.error(f"🚨 Krytyczny błąd przetwarzania poprawek: {e}")
+                        liczba_nagran = len(st.session_state.koszyk_nagran)
+                        progress_bar = st.progress(0, text=f"Przygotowanie... (0 / {liczba_nagran})")
+                        status_placeholder = st.empty()
+
+                        # Przygotuj argumenty do przetworzenia równoległego
+                        zadania = [
+                            (
+                                s_nazwa,
+                                a_bytes,
+                                st.session_state.sekcje_dokumentu.get(s_nazwa, ""),
+                                api_key,
+                                model_choice,
+                            )
+                            for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items())
+                        ]
+
+                        wyniki = {}
+                        bledy = []
+                        ukonczone = 0
+
+                        try:
+                            # Przetwarzaj wszystkie nagrania równolegle (max 5 wątków)
+                            with ThreadPoolExecutor(max_workers=min(5, liczba_nagran)) as executor:
+                                futures = {
+                                    executor.submit(przetworz_jedno_nagranie, zadanie): zadanie[0]
+                                    for zadanie in zadania
+                                }
+                                for future in as_completed(futures):
+                                    s_nazwa = futures[future]
+                                    ukonczone += 1
+                                    try:
+                                        nazwa, nowa_tresc = future.result()
+                                        wyniki[nazwa] = nowa_tresc
+                                        progress_bar.progress(
+                                            ukonczone / liczba_nagran,
+                                            text=f"Przetworzono: {ukonczone} / {liczba_nagran} — ✅ {nazwa}"
+                                        )
+                                    except Exception as e:
+                                        bledy.append(f"❌ Błąd w sekcji '{s_nazwa}': {e}")
+                                        progress_bar.progress(
+                                            ukonczone / liczba_nagran,
+                                            text=f"Przetworzono: {ukonczone} / {liczba_nagran} — ⚠️ Błąd: {s_nazwa}"
+                                        )
+
+                            # Zastosuj wszystkie udane wyniki
+                            for nazwa, nowa_tresc in wyniki.items():
+                                st.session_state.sekcje_dokumentu[nazwa] = nowa_tresc
+                                st.session_state.klucze_mikrofonow[nazwa] = str(uuid.uuid4())
+
+                            # Usuń z koszyka tylko poprawnie przetworzone
+                            for nazwa in wyniki:
+                                if nazwa in st.session_state.koszyk_nagran:
+                                    del st.session_state.koszyk_nagran[nazwa]
+
+                            progress_bar.empty()
+
+                            if bledy:
+                                for b in bledy:
+                                    st.error(b)
+                                if wyniki:
+                                    st.warning(f"⚠️ {len(wyniki)} poprawek wprowadzono pomyślnie, {len(bledy)} nie udało się przetworzyć.")
+                            else:
+                                st.success(f"🎉 Wszystkie {len(wyniki)} poprawki wprowadzone pomyślnie!")
+
+                            st.rerun()
+
+                        except Exception as e:
+                            progress_bar.empty()
+                            st.error(f"🚨 Krytyczny błąd przetwarzania poprawek: {e}")
 
         st.markdown("---")
         st.markdown("### 3️⃣ Pobieranie gotowego dokumentu")
