@@ -27,7 +27,7 @@ TEKST_TYNDALIZACJA_STALY = (
     "dietę gotowaną (BACF) na zapas, konieczne jest przeprowadzenie procesu tyndalizacji (potrójnej pasteryzacji).\n\n"
     "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
-    "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
+    "Pełną instrukcję krok po krok, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
     "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
     "Dodatkowo przygotowaliśmy dla Państwa praktyczny poradnik w formie wideo na platformie YouTube, "
     "gdzie pokazujemy cały proces krok po kroku: https://www.youtube.com/watch?v=tyfT3kmq3ME"
@@ -287,7 +287,7 @@ with tab1:
                                         "data": bytes_data
                                     })
                         
-                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryckką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja rozmowy:\n{transcript}\n"
+                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja rozmowy:\n{transcript}\n"
                         
                         if teksty_z_docx:
                             prompt_glowny += f"\nDodatkowe dokumenty tekstowe przesłane w załącznikach Word:\n{teksty_z_docx}"
@@ -302,7 +302,7 @@ with tab1:
                         st.error(f"🚨 Błąd generatora: {e}")
 
 # ==============================================================================
-# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (BEZBŁĘDNA OBSŁUGA AUDIO)
+# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (ZOPTIMALIZOWANA ARCHITEKTURA)
 # ==============================================================================
 with tab2:
     st.title("🎙️ Edytor głosowy opisów wizyt")
@@ -371,32 +371,42 @@ with tab2:
                 if st.button("🚀 WPROWADŹ WSZYSTKIE POPRAWKI GŁOSOWE (HURTOWO)", type="primary", use_container_width=True):
                     if not api_key: st.error("❌ Podaj klucz API Gemini!")
                     else:
-                        with st.spinner("Gemini edytuje wybrane fragmenty..."):
+                        with St.spinner("Przetwarzanie audio i wdrażanie poprawek..."):
                             try:
                                 genai.configure(api_key=api_key)
+                                # Wymuszamy najnowszy, szybki model do stabilnej zamiany mowy na tekst
+                                model_transkrypcji = genai.GenerativeModel(model_name="gemini-2.5-flash")
                                 model_edytor = genai.GenerativeModel(model_name=model_choice)
                                 
                                 for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items()):
-                                    # 🚨 FIX: Konwertujemy surowe bajty audio na Base64 przed wysyłką do API
-                                    base64_audio = base64.b64encode(a_bytes).decode("utf-8")
-                                    
-                                    p_ed = (
-                                        f"Przeanalizuj dołączone nagranie instrukcji głosowych i bezwzględnie zaktualizuj tekst oryginalny dla sekcji '{s_nazwa}'.\n"
-                                        f"Oryginalna treść medyczna:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\n"
-                                        f"ZASADA: Wprowadź zmiany dyktowane głosowo, zachowując profesjonalny, kliniczny ton BARF/BACF. "
-                                        f"Zwróć TYLKO I WYŁĄCZNIE zaktualizowany tekst medyczny sekcji (bez żadnych wstępów czy komentarzy)."
+                                    # KROK 1: Stabilna, natywna paczka bajtów bezpośrednio dla API Google
+                                    audio_part = genai.types.Part.from_bytes(
+                                        data=a_bytes,
+                                        mime_type="audio/wav"
                                     )
                                     
-                                    a_part = {"data": base64_audio, "mime_type": "audio/wav"}
-                                    response_edycja = model_edytor.generate_content([p_ed, a_part])
+                                    # Zamieniamy mowę Ani na tekst w ułamku sekundy
+                                    p_trans = "Przetwórz to nagranie audio i zwróć dokładny tekst (transkrypcję) tego, co zostało powiedziane, słowo w słowo, po polsku."
+                                    transkrypcja_uwagi = model_transkrypcji.generate_content([p_trans, audio_part]).text.strip()
+                                    
+                                    # KROK 2: Wysyłamy lekki prompt tekstowy (brak zawieszeń sesji)
+                                    p_ed = (
+                                        f"Jesteś precyzyjnym asystentem medycznym BARF/BACF.\n"
+                                        f"Zmień poniższy tekst sekcji '{s_nazwa}' w oparciu o podyktowaną uwagę opiekuna medycznego.\n\n"
+                                        f"Oryginalna treść sekcji:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\n"
+                                        f"Podyktowana uwaga do wdrożenia:\n{transkrypcja_uwagi}\n\n"
+                                        f"ZASADA: Wprowadź korektę, zachowaj styl medyczny. Zwróć wyłącznie sformatowaną, czystą treść nowej sekcji bez żadnych komentarzy."
+                                    )
+                                    
+                                    response_edycja = model_edytor.generate_content(p_ed)
                                     st.session_state.sekcje_dokumentu[s_nazwa] = response_edycja.text.strip()
                                     st.session_state.klucze_mikrofonow[s_nazwa] = str(uuid.uuid4())
                                 
-                                # Czyszczenie koszyka po udanej operacji
+                                # Czyszczenie koszyka po pomyślnym zakończeniu operacji
                                 st.session_state.koszyk_nagran = {}
-                                st.success("🎉 Wszystkie sekcje zostały pomyślnie zaktualizowane!")
+                                st.success("🎉 Wszystkie poprawki pomyślnie wprowadzone w ułamku sekundy!")
                                 st.rerun()
-                            except Exception as e: st.error(f"🚨 Błąd edytora: {e}")
+                            except Exception as e: st.error(f"🚨 Krytyczny błąd przetwarzania poprawek: {e}")
 
         st.markdown("---")
         st.markdown("### 3️⃣ Pobieranie gotowego dokumentu")
