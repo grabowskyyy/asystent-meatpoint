@@ -180,11 +180,13 @@ def przetworz_jedno_nagranie(args):
     Przetwarza jedno nagranie audio: transkrypcja + edycja sekcji.
     Zwraca (nazwa_sekcji, nowa_treść) lub rzuca wyjątek.
     """
-    s_nazwa, a_bytes, oryginalna_tresc, model_choice = args
+    s_nazwa, a_bytes, oryginalna_tresc, api_key, model_choice = args
 
-    # Krok 1: stabilna transkrypcja audio (zawsze flash — szybki i tani) za pomocą oficjalnego formatu Part
+    genai.configure(api_key=api_key)
+
+    # Krok 1: transkrypcja audio (zawsze flash — szybki i tani)
     model_transkrypcji = genai.GenerativeModel(model_name="gemini-2.5-flash")
-    audio_part = genai.types.Part.from_bytes(data=a_bytes, mime_type="audio/wav")
+    audio_part = {"mime_type": "audio/wav", "data": a_bytes}
     p_trans = "Przetwórz to nagranie audio i zwróć dokładny tekst (transkrypcję) tego, co zostało powiedziane, słowo w słowo, po polsku."
     transkrypcja_uwagi = model_transkrypcji.generate_content([p_trans, audio_part]).text.strip()
 
@@ -275,7 +277,7 @@ with tab1:
                                 "Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. "
                                 "Twoim zadaniem jest stworzenie jednego, spójnego protokołu na podstawie trzech źródeł: ustnej transkrypcji, przesłanych dokumentów/zdjęć (załączników) oraz zewnętrznych tekstów wyekstrahowanych z plików Word.\n\n"
                                 "ZASADA INTELIGENTNEGO DOPASOWANIA (CROSS-ANALYSIS):\n"
-                                "1. Przeanalizuj treść każdego załącznika. Informacje w nich zawarte mogą dotyczyć DOWOLNEJ sekcji protokołu (notatki o wodzie, uwagi o smaczkach, dawki leków, opisy samopoczucia, wyniki badań).\n"
+                                "1. Przeanalizuj treść każdego załącznika. Informacje w nich zawarte mogą dotyczyć DOWOLNEY sekcji protokołu (notatki o wodzie, uwagi o smaczkach, dawki leków, opisy samopoczucia, wyniki badań).\n"
                                 "2. Przyporządkuj fakty tematycznie: informacje o diecie komercyjnej do 'Karmy komercyjne', informacje o dawkowaniu wody do 'Piciu/Jakiej wody używać', wyniki krwi do 'Aktualne badania', a opisy dolegliwości do 'Powód konsultacji' lub 'Kał/Biegunka/Wymioty'.\n"
                                 "3. Zintegruj wiedzę z transkrypcji i załączników. Jeśli dokumenty i transkrypcja mówią o tym samym, połącz te fakty w spójny, medyczny opis.\n\n"
                                 "ZASADY OGÓLNE:\n"
@@ -288,7 +290,7 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa disposition.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
@@ -341,6 +343,7 @@ with tab2:
     
     if 'sekcje_dokumentu' not in st.session_state: st.session_state.sekcje_dokumentu = None
     if 'koszyk_nagran' not in st.session_state: st.session_state.koszyk_nagran = {}
+    if 'koszyk_tekstowy' not in st.session_state: st.session_state.koszyk_tekstowy = {}
     if 'v_key' not in st.session_state: st.session_state.v_key = str(uuid.uuid4())
     if 'klucze_mikrofonow' not in st.session_state: st.session_state.klucze_mikrofonow = {}
 
@@ -352,6 +355,7 @@ with tab2:
         if st.button("🔄 Nowy protokół / Reset", type="secondary", use_container_width=True):
             st.session_state.sekcje_dokumentu = None
             st.session_state.koszyk_nagran = {}
+            st.session_state.koszyk_tekstowy = {}
             st.session_state.klucze_mikrofonow = {}
             st.session_state.v_key = str(uuid.uuid4())
             st.rerun()
@@ -367,7 +371,7 @@ with tab2:
         with col_ed1:
             st.markdown("### 1️⃣ Wybór obszaru do korekty")
             wybrana_sekcja = st.selectbox("Wybierz nagłówek, do którego chcesz dodać nagranie:", list(st.session_state.sekcje_dokumentu.keys()), key="sel_voice")
-            st.text_area("📄 Aktualna treść sekcji:", value=st.session_state.sekcje_dokumentu[wybrana_sekcja], height=220, disabled=True, key=f"t_{wybrana_sekcja}")
+            st.text_area("📄 Aktualna treść sekcji:", value=st.session_state.sekcje_dokumentu[wybrana_sekcja], height=180, disabled=True, key=f"t_{wybrana_sekcja}")
             
             if wybrana_sekcja not in st.session_state.klucze_mikrofonow:
                 st.session_state.klucze_mikrofonow[wybrana_sekcja] = str(uuid.uuid4())
@@ -380,99 +384,160 @@ with tab2:
                     st.session_state.koszyk_nagran[wybrana_sekcja] = audio_instrukcja['bytes']
                     st.rerun()
 
+            st.markdown("**✏️ Lub wpisz uwagę tekstową:**")
+            uwaga_tekstowa = st.text_area(
+                "Wpisz krótkie zalecenia / korektę dla tej sekcji:",
+                height=100,
+                key=f"txt_input_{wybrana_sekcja}",
+                placeholder="Np.: waga 4.2 kg, podawać 2x dziennie, unikać ryby"
+            )
+            if st.button("💾 Zapisz uwagę tekstową", key=f"btn_txt_{wybrana_sekcja}", use_container_width=True):
+                tekst = uwaga_tekstowa.strip()
+                if tekst:
+                    st.session_state.koszyk_tekstowy[wybrana_sekcja] = tekst
+                    st.toast(f"✅ Zapisano uwagę tekstową dla: {wybrana_sekcja}")
+                    st.rerun()
+                else:
+                    st.warning("⚠️ Pole uwagi jest puste.")
+
         with col_ed2:
-            st.markdown("### 2️⃣ Lista zarejestrowanych uwag głosowych")
-            if not st.session_state.koszyk_nagran:
-                st.info("Brak oczekujących nagrań. Wybierz sekcję po lewej stronie i nagraj głos.")
+            st.markdown("### 2️⃣ Kolejka uwag do wprowadzenia")
+
+            jest_cos = st.session_state.koszyk_nagran or st.session_state.koszyk_tekstowy
+
+            if not jest_cos:
+                st.info("Brak oczekujących uwag. Wybierz sekcję po lewej stronie, nagraj głos lub wpisz uwagę tekstową.")
             else:
-                for s_nazwa in list(st.session_state.koszyk_nagran.keys()):
-                    if s_nazwa in st.session_state.koszyk_nagran:
-                        a_bytes = st.session_state.koszyk_nagran[s_nazwa]
-                        c_box1, c_box2 = st.columns([5, 1])
-                        c_box1.markdown(f"**📌 {s_nazwa}**")
-                        c_box1.audio(a_bytes, format="audio/wav")
-                        
-                        if c_box2.button("❌", key=f"del_{s_nazwa}", help="Usuń to nagranie"):
-                            if s_nazwa in st.session_state.koszyk_nagran:
+                # --- Uwagi głosowe ---
+                if st.session_state.koszyk_nagran:
+                    st.markdown("**🎙️ Uwagi głosowe:**")
+                    for s_nazwa in list(st.session_state.koszyk_nagran.keys()):
+                        if s_nazwa in st.session_state.koszyk_nagran:
+                            a_bytes = st.session_state.koszyk_nagran[s_nazwa]
+                            c_box1, c_box2 = st.columns([5, 1])
+                            c_box1.markdown(f"**📌 {s_nazwa}**")
+                            c_box1.audio(a_bytes, format="audio/wav")
+                            if c_box2.button("❌", key=f"del_glos_{s_nazwa}", help="Usuń to nagranie"):
                                 del st.session_state.koszyk_nagran[s_nazwa]
-                            st.session_state.klucze_mikrofonow[s_nazwa] = str(uuid.uuid4())
-                            st.toast(f"🗑️ Usunięto nagranie z sekcji: {s_nazwa}")
-                            st.rerun()
-                
+                                st.session_state.klucze_mikrofonow[s_nazwa] = str(uuid.uuid4())
+                                st.toast(f"🗑️ Usunięto nagranie głosowe: {s_nazwa}")
+                                st.rerun()
+
+                # --- Uwagi tekstowe ---
+                if st.session_state.koszyk_tekstowy:
+                    st.markdown("**✏️ Uwagi tekstowe:**")
+                    for s_nazwa in list(st.session_state.koszyk_tekstowy.keys()):
+                        if s_nazwa in st.session_state.koszyk_tekstowy:
+                            t_tresc = st.session_state.koszyk_tekstowy[s_nazwa]
+                            c_box1, c_box2 = st.columns([5, 1])
+                            c_box1.markdown(f"**📌 {s_nazwa}**")
+                            c_box1.caption(t_tresc)
+                            if c_box2.button("❌", key=f"del_txt_{s_nazwa}", help="Usuń tę uwagę tekstową"):
+                                del st.session_state.koszyk_tekstowy[s_nazwa]
+                                st.toast(f"🗑️ Usunięto uwagę tekstową: {s_nazwa}")
+                                st.rerun()
+
                 st.markdown("---")
-                if st.button("🚀 WPROWADŹ WSZYSTKIE POPRAWKI GŁOSOWE (HURTOWO)", type="primary", use_container_width=True):
+                liczba_wszystkich = len(st.session_state.koszyk_nagran) + len(st.session_state.koszyk_tekstowy)
+                if st.button(f"🚀 WPROWADŹ WSZYSTKIE POPRAWKI ({liczba_wszystkich} szt.)", type="primary", use_container_width=True):
                     if not api_key: st.error("❌ Podaj klucz API Gemini!")
                     else:
-                        liczba_nagran = len(st.session_state.koszyk_nagran)
-                        progress_bar = st.progress(0, text=f"Przygotowanie... (0 / {liczba_nagran})")
-
-                        # 🚨 FIX: Konfigurujemy klucz globalnie przed startem wątków, chroniąc przed awariami
                         genai.configure(api_key=api_key)
-
-                        # Przygotuj argumenty do przetworzenia równoległego
-                        zadania = [
-                            (
-                                s_nazwa,
-                                a_bytes,
-                                st.session_state.sekcje_dokumentu.get(s_nazwa, ""),
-                                model_choice,
-                            )
-                            for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items())
-                        ]
-
+                        progress_bar = st.progress(0, text=f"Przygotowanie... (0 / {liczba_wszystkich})")
                         wyniki = {}
                         bledy = []
                         ukonczone = 0
 
-                        try:
-                            # Przetwarzaj wszystkie nagrania równolegle (max 10 wątków)
-                            with ThreadPoolExecutor(max_workers=min(10, liczba_nagran)) as executor:
-                                futures = {
-                                    executor.submit(przetworz_jedno_nagranie, zadanie): zadanie[0]
-                                    for zadanie in zadania
-                                }
-                                for future in as_completed(futures):
-                                    s_nazwa = futures[future]
-                                    ukonczone += 1
-                                    try:
-                                        nazwa, nowa_tresc = future.result()
-                                        wyniki[nazwa] = nowa_tresc
-                                        progress_bar.progress(
-                                            ukonczone / liczba_nagran,
-                                            text=f"Przetworzono: {ukonczone} / {liczba_nagran} — ✅ {nazwa}"
-                                        )
-                                    except Exception as e:
-                                        bledy.append(f"❌ Błąd w sekcji '{s_nazwa}': {e}")
-                                        progress_bar.progress(
-                                            ukonczone / liczba_nagran,
-                                            text=f"Przetworzono: {ukonczone} / {liczba_nagran} — ⚠️ Błąd: {s_nazwa}"
-                                        )
+                        # --- BLOK 1: Równoległe przetwarzanie nagrań głosowych ---
+                        if st.session_state.koszyk_nagran:
+                            zadania_glos = [
+                                (
+                                    s_nazwa,
+                                    a_bytes,
+                                    st.session_state.sekcje_dokumentu.get(s_nazwa, ""),
+                                    api_key,
+                                    model_choice,
+                                )
+                                for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items())
+                            ]
+                            try:
+                                with ThreadPoolExecutor(max_workers=min(10, len(zadania_glos))) as executor:
+                                    futures = {
+                                        executor.submit(przetworz_jedno_nagranie, z): z[0]
+                                        for z in zadania_glos
+                                    }
+                                    for future in as_completed(futures):
+                                        s_nazwa = futures[future]
+                                        ukonczone += 1
+                                        try:
+                                            nazwa, nowa_tresc = future.result()
+                                            wyniki[nazwa] = nowa_tresc
+                                            progress_bar.progress(
+                                                ukonczone / liczba_wszystkich,
+                                                text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ✅ 🎙️ {nazwa}"
+                                            )
+                                        except Exception as e:
+                                            bledy.append(f"❌ Błąd głosowy w sekcji '{s_nazwa}': {e}")
+                                            progress_bar.progress(
+                                                ukonczone / liczba_wszystkich,
+                                                text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ⚠️ {s_nazwa}"
+                                            )
+                            except Exception as e:
+                                bledy.append(f"❌ Krytyczny błąd głosowy: {e}")
 
-                            # Zastosuj wszystkie udane wyniki
-                            for nazwa, nowa_tresc in wyniki.items():
-                                st.session_state.sekcje_dokumentu[nazwa] = nowa_tresc
+                        # --- BLOK 2: Sekwencyjne przetwarzanie uwag tekstowych ---
+                        # (szybkie - tylko redakcja tekstu, bez audio, nie wymaga wątków)
+                        if st.session_state.koszyk_tekstowy:
+                            model_redaktor = genai.GenerativeModel(model_name=model_choice)
+                            for s_nazwa, uwaga in list(st.session_state.koszyk_tekstowy.items()):
+                                ukonczone += 1
+                                try:
+                                    # Jeśli ta sekcja była już zmieniona przez głos, bierzemy nową treść
+                                    baza = wyniki.get(s_nazwa, st.session_state.sekcje_dokumentu.get(s_nazwa, ""))
+                                    p_txt = (
+                                        f"Jesteś redaktorem dokumentacji medycznej. Masz dwa teksty:\n\n"
+                                        f"ORYGINALNY TEKST SEKCJI '{s_nazwa}':\n{baza}\n\n"
+                                        f"UWAGA DO WPLECENIA (napisana przez dietetyka w skrócie):\n{uwaga}\n\n"
+                                        f"🚨 BEZWZGLĘDNE ZASADY — CZYTAJ UWAŻNIE:\n"
+                                        f"1. Wpleć treść UWAGI DO WPLECENIA w ORYGINALNY TEKST SEKCJI.\n"
+                                        f"2. ZAKAZ dodawania JAKICHKOLWIEK słów, faktów, zaleceń, uzupełnień, których NIE MA w obu powyższych tekstach. Zero inwencji własnej.\n"
+                                        f"3. Twoim jedynym zadaniem jest ułożenie podanych informacji w poprawny gramatycznie i spójny tekst po polsku.\n"
+                                        f"4. ZAKAZ wstępów, podsumowań, komentarzy AI ('Oto zaktualizowana sekcja:' itp.).\n"
+                                        f"5. Zwróć WYŁĄCZNIE gotowy, czysty tekst sekcji."
+                                    )
+                                    wynik_txt = model_redaktor.generate_content(p_txt).text.strip()
+                                    wyniki[s_nazwa] = wynik_txt
+                                    progress_bar.progress(
+                                        ukonczone / liczba_wszystkich,
+                                        text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ✅ ✏️ {s_nazwa}"
+                                    )
+                                except Exception as e:
+                                    bledy.append(f"❌ Błąd tekstowy w sekcji '{s_nazwa}': {e}")
+                                    progress_bar.progress(
+                                        ukonczone / liczba_wszystkich,
+                                        text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ⚠️ {s_nazwa}"
+                                    )
+
+                        # --- Zastosuj wyniki i wyczyść koszyki ---
+                        for nazwa, nowa_tresc in wyniki.items():
+                            st.session_state.sekcje_dokumentu[nazwa] = nowa_tresc
+                            if nazwa in st.session_state.klucze_mikrofonow:
                                 st.session_state.klucze_mikrofonow[nazwa] = str(uuid.uuid4())
+                        for nazwa in wyniki:
+                            st.session_state.koszyk_nagran.pop(nazwa, None)
+                            st.session_state.koszyk_tekstowy.pop(nazwa, None)
 
-                            # Usuń z koszyka tylko poprawnie przetworzone
-                            for nazwa in wyniki:
-                                if nazwa in st.session_state.koszyk_nagran:
-                                    del st.session_state.koszyk_nagran[nazwa]
+                        progress_bar.empty()
 
-                            progress_bar.empty()
+                        if bledy:
+                            for b in bledy:
+                                st.error(b)
+                            if wyniki:
+                                st.warning(f"⚠️ {len(wyniki)} poprawek wprowadzono pomyślnie, {len(bledy)} nie udało się przetworzyć.")
+                        else:
+                            st.success(f"🎉 Wszystkie {len(wyniki)} poprawki wprowadzone pomyślnie!")
 
-                            if bledy:
-                                for b in bledy:
-                                    st.error(b)
-                                if wyniki:
-                                    st.warning(f"⚠️ {len(wyniki)} poprawek wprowadzono pomyślnie, {len(bledy)} nie udało się przetworzyć.")
-                            else:
-                                st.success(f"🎉 Wszystkie {len(wyniki)} poprawki wprowadzone pomyślnie!")
-
-                            st.rerun()
-
-                        except Exception as e:
-                            progress_bar.empty()
-                            st.error(f"🚨 Krytyczny błąd przetwarzania poprawek: {e}")
+                        st.rerun()
 
         st.markdown("---")
         st.markdown("### 3️⃣ Pobieranie gotowego dokumentu")
