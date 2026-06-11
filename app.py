@@ -180,13 +180,11 @@ def przetworz_jedno_nagranie(args):
     Przetwarza jedno nagranie audio: transkrypcja + edycja sekcji.
     Zwraca (nazwa_sekcji, nowa_treść) lub rzuca wyjątek.
     """
-    s_nazwa, a_bytes, oryginalna_tresc, api_key, model_choice = args
+    s_nazwa, a_bytes, oryginalna_tresc, model_choice = args
 
-    genai.configure(api_key=api_key)
-
-    # Krok 1: transkrypcja audio (zawsze flash — szybki i tani)
+    # Krok 1: stabilna transkrypcja audio (zawsze flash — szybki i tani) za pomocą oficjalnego formatu Part
     model_transkrypcji = genai.GenerativeModel(model_name="gemini-2.5-flash")
-    audio_part = {"mime_type": "audio/wav", "data": a_bytes}
+    audio_part = genai.types.Part.from_bytes(data=a_bytes, mime_type="audio/wav")
     p_trans = "Przetwórz to nagranie audio i zwróć dokładny tekst (transkrypcję) tego, co zostało powiedziane, słowo w słowo, po polsku."
     transkrypcja_uwagi = model_transkrypcji.generate_content([p_trans, audio_part]).text.strip()
 
@@ -277,7 +275,7 @@ with tab1:
                                 "Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. "
                                 "Twoim zadaniem jest stworzenie jednego, spójnego protokołu na podstawie trzech źródeł: ustnej transkrypcji, przesłanych dokumentów/zdjęć (załączników) oraz zewnętrznych tekstów wyekstrahowanych z plików Word.\n\n"
                                 "ZASADA INTELIGENTNEGO DOPASOWANIA (CROSS-ANALYSIS):\n"
-                                "1. Przeanalizuj treść każdego załącznika. Informacje w nich zawarte mogą dotyczyć DOWOLNEY sekcji protokołu (notatki o wodzie, uwagi o smaczkach, dawki leków, opisy samopoczucia, wyniki badań).\n"
+                                "1. Przeanalizuj treść każdego załącznika. Informacje w nich zawarte mogą dotyczyć DOWOLNEJ sekcji protokołu (notatki o wodzie, uwagi o smaczkach, dawki leków, opisy samopoczucia, wyniki badań).\n"
                                 "2. Przyporządkuj fakty tematycznie: informacje o diecie komercyjnej do 'Karmy komercyjne', informacje o dawkowaniu wody do 'Piciu/Jakiej wody używać', wyniki krwi do 'Aktualne badania', a opisy dolegliwości do 'Powód konsultacji' lub 'Kał/Biegunka/Wymioty'.\n"
                                 "3. Zintegruj wiedzę z transkrypcji i załączników. Jeśli dokumenty i transkrypcja mówią o tym samym, połącz te fakty w spójny, medyczny opis.\n\n"
                                 "ZASADY OGÓLNE:\n"
@@ -290,7 +288,7 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa disposition.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
@@ -407,7 +405,9 @@ with tab2:
                     else:
                         liczba_nagran = len(st.session_state.koszyk_nagran)
                         progress_bar = st.progress(0, text=f"Przygotowanie... (0 / {liczba_nagran})")
-                        status_placeholder = st.empty()
+
+                        # 🚨 FIX: Konfigurujemy klucz globalnie przed startem wątków, chroniąc przed awariami
+                        genai.configure(api_key=api_key)
 
                         # Przygotuj argumenty do przetworzenia równoległego
                         zadania = [
@@ -415,7 +415,6 @@ with tab2:
                                 s_nazwa,
                                 a_bytes,
                                 st.session_state.sekcje_dokumentu.get(s_nazwa, ""),
-                                api_key,
                                 model_choice,
                             )
                             for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items())
@@ -426,7 +425,7 @@ with tab2:
                         ukonczone = 0
 
                         try:
-                            # Przetwarzaj wszystkie nagrania równolegle (max 5 wątków)
+                            # Przetwarzaj wszystkie nagrania równolegle (max 10 wątków)
                             with ThreadPoolExecutor(max_workers=min(10, liczba_nagran)) as executor:
                                 futures = {
                                     executor.submit(przetworz_jedno_nagranie, zadanie): zadanie[0]
