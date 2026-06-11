@@ -243,7 +243,7 @@ with tab1:
                                 "Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. "
                                 "Twoim zadaniem jest stworzenie jednego, spójnego protokołu na podstawie trzech źródeł: ustnej transkrypcji, przesłanych dokumentów/zdjęć (załączników) oraz zewnętrznych tekstów wyekstrahowanych z plików Word.\n\n"
                                 "ZASADA INTELIGENTNEGO DOPASOWANIA (CROSS-ANALYSIS):\n"
-                                "1. Przeanalizuj treść każdego załącznika. Informacje w nich zawarte mogą dotyczyć DOWOLNEJ sekcji protokołu (notatki o wodzie, uwagi o smaczkach, dawki leków, opisy samopoczucia, wyniki badań).\n"
+                                "1. Przeanalizuj treść każdego załącznika. Informacje w nich zawarte mogą dotyczyć DOWOLNEY sekcji protokołu (notatki o wodzie, uwagi o smaczkach, dawki leków, opisy samopoczucia, wyniki badań).\n"
                                 "2. Przyporządkuj fakty tematycznie: informacje o diecie komercyjnej do 'Karmy komercyjne', informacje o dawkowaniu wody do 'Piciu/Jakiej wody używać', wyniki krwi do 'Aktualne badania', a opisy dolegliwości do 'Powód konsultacji' lub 'Kał/Biegunka/Wymioty'.\n"
                                 "3. Zintegruj wiedzę z transkrypcji i załączników. Jeśli dokumenty i transkrypcja mówią o tym samym, połącz te fakty w spójny, medyczny opis.\n\n"
                                 "ZASADY OGÓLNE:\n"
@@ -302,7 +302,7 @@ with tab1:
                         st.error(f"🚨 Błąd generatora: {e}")
 
 # ==============================================================================
-# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (ZOPTIMALIZOWANA ARCHITEKTURA)
+# 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW (Rygorystyczne kryteria wdrożenia poprawek)
 # ==============================================================================
 with tab2:
     st.title("🎙️ Edytor głosowy opisów wizyt")
@@ -378,7 +378,6 @@ with tab2:
                                 model_edytor = genai.GenerativeModel(model_name=model_choice)
                                 
                                 for s_nazwa, a_bytes in list(st.session_state.koszyk_nagran.items()):
-                                    # 🚨 NAPRAWIONO: Niezawodny, uniwersalny format przekazywania audio (MIME + RAW DATA)
                                     audio_part = {
                                         "mime_type": "audio/wav",
                                         "data": a_bytes
@@ -387,12 +386,17 @@ with tab2:
                                     p_trans = "Przetwórz to nagranie audio i zwróć dokładny tekst (transkrypcję) tego, co zostało powiedziane, słowo w słowo, po polsku."
                                     transkrypcja_uwagi = model_transkrypcji.generate_content([p_trans, audio_part]).text.strip()
                                     
+                                    # 🚨 DOKRĘCENIE ŚRUBY: Rygorystyczny, bezkompromisowy prompt modyfikacji klinicznej
                                     p_ed = (
-                                        f"Jesteś precyzyjnym asystentem medycznym BARF/BACF.\n"
-                                        f"Zmień poniższy tekst sekcji '{s_nazwa}' w oparciu o podyktowaną uwagę opiekuna medycznego.\n\n"
+                                        f"Jesteś precyzyjnym edytorem dokumentacji medycznej zwierząt BARF/BACF.\n"
+                                        f"Twoim jedynym zadaniem jest zaktualizowanie oryginalnego tekstu sekcji '{s_nazwa}' wyłącznie o fakty, które zostały podyktowane w uwadze głosowej.\n\n"
                                         f"Oryginalna treść sekcji:\n{st.session_state.sekcje_dokumentu[s_nazwa]}\n\n"
-                                        f"Podyktowana uwaga do wdrożenia:\n{transkrypcja_uwagi}\n\n"
-                                        f"ZASADA: Wprowadź korektę, zachowaj styl medyczny. Zwróć wyłącznie sformatowaną, czystą treść nowej sekcji bez żadnych komentarzy."
+                                        f"Podyktowana uwaga głosowa (Słuchaj uważnie i zintegruj te dane):\n{transkrypcja_uwagi}\n\n"
+                                        f"🚨 RYGORYSTYCZNE ZASADY BEZPIECZEŃSTWA (ZAKAZ HALUCYNACJI):\n"
+                                        f"1. Dołącz NOWE fakty z uwagi głosowej, odpowiednio układając je składniowo, gramatycznie i logicznie z oryginalną treścią.\n"
+                                        f"2. ZAKAZ dodawania jakichkolwiek własnych zaleceń, teorii dietetycznych, komentarzy, dopisków od AI czy wniosków niewyrażonych wprost.\n"
+                                        f"3. ZAKAZ pisania jakichkolwiek uprzejmości, wstępów czy podsumowań typu 'Oto zaktualizowana sekcja:'.\n"
+                                        f"4. Zwróć wyłącznie czystą, zaktualizowaną treść medyczną sekcji (tekst lub punkty)."
                                     )
                                     
                                     response_edycja = model_edytor.generate_content(p_ed)
