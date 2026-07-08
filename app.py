@@ -263,14 +263,15 @@ with st.sidebar:
     api_key = st.text_input("Klucz API Gemini", type="password")
     # Przyjazne nazwy widoczne dla użytkownika -> techniczne ID modelu Google
     MODELE = {
-        "💨 Standardowy — szybki, do większości wizyt (Gemini 3.5 Flash)": "gemini-3.5-flash",
-        "🎯 Dokładny — do trudnych badań i załączników, wolniejszy (Gemini 3.1 Pro)": "gemini-3.1-pro-preview",
+        "💨 Standardowy — szybki": "gemini-3.5-flash",
+        "🎯 Dokładny — precyzyjny": "gemini-3.1-pro-preview",
     }
     etykieta_modelu = st.selectbox("Wybierz tryb AI", list(MODELE.keys()))
     model_choice = MODELE[etykieta_modelu]
     st.caption(
-        "💡 Zacznij od trybu *Standardowego*. Przełącz na *Dokładny*, gdy dołączasz "
-        "skomplikowane wyniki badań (PDF/zdjęcia) i zależy Ci na maksymalnej precyzji."
+        "💡 **Standardowy** — do większości wizyt, najszybszy.\n\n"
+        "**Dokładny** — gdy dołączasz skomplikowane wyniki badań (PDF / zdjęcia) "
+        "i zależy Ci na maksymalnej precyzji. Wolniejszy i droższy."
     )
 
     with st.expander("🔍 Pokaż dostępne modele (diagnostyka)"):
