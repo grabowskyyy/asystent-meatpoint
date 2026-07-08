@@ -461,7 +461,11 @@ with tab2:
         with col_ed1:
             st.markdown("### 1️⃣ Wybór obszaru do korekty")
             wybrana_sekcja = st.selectbox("Wybierz nagłówek, do którego chcesz dodać nagranie:", list(st.session_state.sekcje_dokumentu.keys()), key="sel_voice", format_func=czytelna_nazwa)
-            st.text_area("📄 Aktualna treść sekcji:", value=st.session_state.sekcje_dokumentu[wybrana_sekcja], height=180, disabled=True, key=f"t_{wybrana_sekcja}")
+
+            # Podgląd treści: STAŁY klucz + wartość podawana przez pamięć sesji.
+            # Dzięki temu element nie jest przebudowywany przy zmianie sekcji (brak przeskoku strony).
+            st.session_state["podglad_biezacej_sekcji"] = st.session_state.sekcje_dokumentu[wybrana_sekcja]
+            st.text_area("📄 Aktualna treść sekcji:", height=180, disabled=True, key="podglad_biezacej_sekcji")
             
             if wybrana_sekcja not in st.session_state.klucze_mikrofonow:
                 st.session_state.klucze_mikrofonow[wybrana_sekcja] = str(uuid.uuid4())
@@ -475,16 +479,22 @@ with tab2:
                     st.rerun()
 
             st.markdown("**✏️ Lub wpisz uwagę tekstową:**")
+            # Przy zmianie sekcji czyścimy pole (stały klucz = brak przeskoku strony,
+            # a pole i tak startuje puste dla każdej nowej sekcji).
+            if st.session_state.get("ostatnia_sekcja_edytora") != wybrana_sekcja:
+                st.session_state["uwaga_tekstowa_input"] = ""
+                st.session_state["ostatnia_sekcja_edytora"] = wybrana_sekcja
             uwaga_tekstowa = st.text_area(
                 "Wpisz krótkie zalecenia / korektę dla tej sekcji:",
                 height=100,
-                key=f"txt_input_{wybrana_sekcja}",
+                key="uwaga_tekstowa_input",
                 placeholder="Np.: waga 4.2 kg, podawać 2x dziennie, unikać ryby"
             )
-            if st.button("💾 Zapisz uwagę tekstową", key=f"btn_txt_{wybrana_sekcja}", use_container_width=True):
+            if st.button("💾 Zapisz uwagę tekstową", key="btn_zapisz_uwage", use_container_width=True):
                 tekst = uwaga_tekstowa.strip()
                 if tekst:
                     st.session_state.koszyk_tekstowy[wybrana_sekcja] = tekst
+                    st.session_state["ostatnia_sekcja_edytora"] = None  # wymuś wyczyszczenie pola po zapisie
                     st.toast(f"✅ Zapisano uwagę tekstową dla: {czytelna_nazwa(wybrana_sekcja)}")
                     st.rerun()
                 else:
