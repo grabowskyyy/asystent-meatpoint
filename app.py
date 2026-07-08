@@ -64,6 +64,11 @@ TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
 )
 
 
+def czytelna_nazwa(s):
+    """Wersja nazwy sekcji do POKAZANIA użytkownikowi — bez znaczników markdown (###/##)."""
+    return s.replace("### ", "").replace("###", "").replace("## ", "").replace("##", "").strip()
+
+
 def _norm_naglowek(s):
     """Normalizuje etykietę nagłówka do porównania: usuwa znaczniki markdown,
     bierze część do pierwszego dwukropka i podnosi do wielkich liter."""
@@ -455,7 +460,7 @@ with tab2:
         
         with col_ed1:
             st.markdown("### 1️⃣ Wybór obszaru do korekty")
-            wybrana_sekcja = st.selectbox("Wybierz nagłówek, do którego chcesz dodać nagranie:", list(st.session_state.sekcje_dokumentu.keys()), key="sel_voice")
+            wybrana_sekcja = st.selectbox("Wybierz nagłówek, do którego chcesz dodać nagranie:", list(st.session_state.sekcje_dokumentu.keys()), key="sel_voice", format_func=czytelna_nazwa)
             st.text_area("📄 Aktualna treść sekcji:", value=st.session_state.sekcje_dokumentu[wybrana_sekcja], height=180, disabled=True, key=f"t_{wybrana_sekcja}")
             
             if wybrana_sekcja not in st.session_state.klucze_mikrofonow:
@@ -480,7 +485,7 @@ with tab2:
                 tekst = uwaga_tekstowa.strip()
                 if tekst:
                     st.session_state.koszyk_tekstowy[wybrana_sekcja] = tekst
-                    st.toast(f"✅ Zapisano uwagę tekstową dla: {wybrana_sekcja}")
+                    st.toast(f"✅ Zapisano uwagę tekstową dla: {czytelna_nazwa(wybrana_sekcja)}")
                     st.rerun()
                 else:
                     st.warning("⚠️ Pole uwagi jest puste.")
@@ -500,12 +505,12 @@ with tab2:
                         if s_nazwa in st.session_state.koszyk_nagran:
                             a_bytes = st.session_state.koszyk_nagran[s_nazwa]
                             c_box1, c_box2 = st.columns([5, 1])
-                            c_box1.markdown(f"**📌 {s_nazwa}**")
+                            c_box1.markdown(f"**📌 {czytelna_nazwa(s_nazwa)}**")
                             c_box1.audio(a_bytes, format="audio/wav")
                             if c_box2.button("❌", key=f"del_glos_{s_nazwa}", help="Usuń to nagranie"):
                                 del st.session_state.koszyk_nagran[s_nazwa]
                                 st.session_state.klucze_mikrofonow[s_nazwa] = str(uuid.uuid4())
-                                st.toast(f"🗑️ Usunięto nagranie głosowe: {s_nazwa}")
+                                st.toast(f"🗑️ Usunięto nagranie głosowe: {czytelna_nazwa(s_nazwa)}")
                                 st.rerun()
 
                 # --- Uwagi tekstowe ---
@@ -515,11 +520,11 @@ with tab2:
                         if s_nazwa in st.session_state.koszyk_tekstowy:
                             t_tresc = st.session_state.koszyk_tekstowy[s_nazwa]
                             c_box1, c_box2 = st.columns([5, 1])
-                            c_box1.markdown(f"**📌 {s_nazwa}**")
+                            c_box1.markdown(f"**📌 {czytelna_nazwa(s_nazwa)}**")
                             c_box1.caption(t_tresc)
                             if c_box2.button("❌", key=f"del_txt_{s_nazwa}", help="Usuń tę uwagę tekstową"):
                                 del st.session_state.koszyk_tekstowy[s_nazwa]
-                                st.toast(f"🗑️ Usunięto uwagę tekstową: {s_nazwa}")
+                                st.toast(f"🗑️ Usunięto uwagę tekstową: {czytelna_nazwa(s_nazwa)}")
                                 st.rerun()
 
                 st.markdown("---")
@@ -559,13 +564,13 @@ with tab2:
                                             wyniki[nazwa] = nowa_tresc
                                             progress_bar.progress(
                                                 ukonczone / liczba_wszystkich,
-                                                text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ✅ 🎙️ {nazwa}"
+                                                text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ✅ 🎙️ {czytelna_nazwa(nazwa)}"
                                             )
                                         except Exception as e:
-                                            bledy.append(f"❌ Błąd głosowy w sekcji '{s_nazwa}': {e}")
+                                            bledy.append(f"❌ Błąd głosowy w sekcji '{czytelna_nazwa(s_nazwa)}': {e}")
                                             progress_bar.progress(
                                                 ukonczone / liczba_wszystkich,
-                                                text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ⚠️ {s_nazwa}"
+                                                text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ⚠️ {czytelna_nazwa(s_nazwa)}"
                                             )
                             except Exception as e:
                                 bledy.append(f"❌ Krytyczny błąd głosowy: {e}")
@@ -593,13 +598,13 @@ with tab2:
                                     wyniki[s_nazwa] = wynik_txt
                                     progress_bar.progress(
                                         ukonczone / liczba_wszystkich,
-                                        text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ✅ ✏️ {s_nazwa}"
+                                        text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ✅ ✏️ {czytelna_nazwa(s_nazwa)}"
                                     )
                                 except Exception as e:
-                                    bledy.append(f"❌ Błąd tekstowy w sekcji '{s_nazwa}': {e}")
+                                    bledy.append(f"❌ Błąd tekstowy w sekcji '{czytelna_nazwa(s_nazwa)}': {e}")
                                     progress_bar.progress(
                                         ukonczone / liczba_wszystkich,
-                                        text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ⚠️ {s_nazwa}"
+                                        text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ⚠️ {czytelna_nazwa(s_nazwa)}"
                                     )
 
                         # --- Zastosuj wyniki i wyczyść koszyki ---
