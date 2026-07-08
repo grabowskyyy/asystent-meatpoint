@@ -1,4 +1,5 @@
 import streamlit as st, google.generativeai as genai, os, re, pandas as pd, uuid, base64
+import time, random
 from io import BytesIO
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
@@ -38,7 +39,7 @@ TEKST_INNE_SMACZKI_STALY = (
     "Wprowadzając do codziennej rutyny jakiekolwiek inne smaczki komercyjne, należy bezwzględnie "
     "pamiętać o kontrolowaniu ich kaloryczności, aby nie zaburzyć bilansu nowej diety pacjenta.\n\n"
     "Szczegółowy poradnik oraz instrukcję, jak samodzielnie wyliczyć kaloryczność dowolnego produktu komercyjnego "
-    "na podstawie danych z etykiety, znają Państwo w naszym artykule: "
+    "na podstawie danych z etykiety, znajdą Państwo w naszym artykule: "
     "https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow"
 )
 
@@ -60,18 +61,37 @@ TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
     "To będzie już kompletna dieta."
 )
 
+
+def _norm_naglowek(s):
+    """Normalizuje etykietę nagłówka do porównania: usuwa znaczniki markdown,
+    bierze część do pierwszego dwukropka i podnosi do wielkich liter."""
+    s = s.replace("###", "").replace("##", "").strip()
+    if ":" in s:
+        s = s.split(":", 1)[0]
+    return s.strip().upper()
+
+
 def segmentuj_docx(file_bytes):
     doc = Document(BytesIO(file_bytes))
-    sekcje = {}; biezaca = "Nagłówek i Metryczka"; sekcje[biezaca] = []
+    # Mapa: znormalizowana etykieta -> oryginalny klucz z STRUKTURA_PROTOKOLU
+    naglowki = {_norm_naglowek(n): n for n in STRUKTURA_PROTOKOLU}
+    sekcje = {}
+    biezaca = "Nagłówek i Metryczka"
+    sekcje[biezaca] = []
     for p in doc.paragraphs:
         t = p.text.strip()
-        if not t: continue
-        z = False
-        for n in STRUKTURA_PROTOKOLU:
-            czysty_n = n.replace("### ", "").strip().upper()
-            if czysty_n in t.upper() and len(t) < 65: biezaca = n; sekcje[biezaca] = []; z = True; break
-        if not z: sekcje[biezaca].append(t)
+        if not t:
+            continue
+        klucz = _norm_naglowek(t)
+        # Dokładne dopasowanie etykiety (nie podłańcuch) — eliminuje kolizję
+        # "Smaczki:" ⊂ "Inne smaczki:" i podobne.
+        if klucz in naglowki and len(t) < 65:
+            biezaca = naglowki[klucz]
+            sekcje[biezaca] = []
+        else:
+            sekcje[biezaca].append(t)
     return {k: "\n".join(v) for k, v in sekcje.items()}
+
 
 def add_hyperlink(p, url, text):
     part = p.part
@@ -175,6 +195,35 @@ def konwertuj_do_docx(tekst_md):
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 
+def generuj_z_retry(model, tresc, max_prob=5):
+    """Wywołuje model.generate_content z ponawianiem przy błędach limitu (429/quota/rate).
+    Backoff wykładniczy + jitter. Inne błędy rzuca natychmiast."""
+    for proba in range(max_prob):
+        try:
+            return model.generate_content(tresc)
+        except Exception as e:
+            k = str(e).lower()
+            czy_limit = any(x in k for x in ["429", "resource", "quota", "rate", "exhaust"])
+            if czy_limit and proba < max_prob - 1:
+                time.sleep((2 ** proba) + random.uniform(0, 1))
+                continue
+            raise
+
+
+@st.cache_data(ttl=3600)
+def pobierz_baze_artykulow(url):
+    """Pobiera bazę artykułów z Arkusza Google (cache 1h) i waliduje kolumny."""
+    csv_url = url.replace('/edit?usp=sharing', '/export?format=csv')
+    df = pd.read_csv(csv_url)
+    brakujace = {'URL', 'Nazwa', 'Opis dla AI'} - set(df.columns)
+    if brakujace:
+        raise ValueError(
+            f"Arkusz Google nie zawiera wymaganych kolumn: {brakujace}. "
+            f"Sprawdź nagłówki (dokładna pisownia: 'URL', 'Nazwa', 'Opis dla AI')."
+        )
+    return df
+
+
 def przetworz_jedno_nagranie(args):
     """
     Przetwarza jedno nagranie audio: transkrypcja + edycja sekcji.
@@ -188,7 +237,7 @@ def przetworz_jedno_nagranie(args):
     model_transkrypcji = genai.GenerativeModel(model_name="gemini-2.5-flash")
     audio_part = {"mime_type": "audio/wav", "data": a_bytes}
     p_trans = "Przetwórz to nagranie audio i zwróć dokładny tekst (transkrypcję) tego, co zostało powiedziane, słowo w słowo, po polsku."
-    transkrypcja_uwagi = model_transkrypcji.generate_content([p_trans, audio_part]).text.strip()
+    transkrypcja_uwagi = generuj_z_retry(model_transkrypcji, [p_trans, audio_part]).text.strip()
 
     # Krok 2: integracja uwagi z oryginalną treścią sekcji
     model_edytor = genai.GenerativeModel(model_name=model_choice)
@@ -203,7 +252,7 @@ def przetworz_jedno_nagranie(args):
         f"3. ZAKAZ wstępów i podsumowań ('Oto zaktualizowana sekcja:' itp.).\n"
         f"4. Zwróć WYŁĄCZNIE czystą, zaktualizowaną treść sekcji."
     )
-    nowa_tresc = model_edytor.generate_content(p_ed).text.strip()
+    nowa_tresc = generuj_z_retry(model_edytor, p_ed).text.strip()
     return s_nazwa, nowa_tresc
 
 
@@ -216,19 +265,17 @@ with st.sidebar:
         "Wybierz model", 
         [
             "gemini-3.5-flash", 
-            "gemini-3.1-pro", 
             "gemini-3.1-flash-lite", 
-            "gemini-1.5-pro", 
-            "gemini-1.5-flash"
+            "gemini-3.1-pro"
         ]
     )
 
     st.markdown("---")
     st.info(
         "🔒 **Bezpieczeństwo danych pacjenta:**\n\n"
-        "Narzędzie przetwarza dane w bezpiecznym, szyfrowanym strumieniu bezpośrednio przez oficjalne Google Gemini API.\n\n"
+        "Narzędzie przetwarza dane w bezpiecznym, szyfrowanym strumieniu bezpośrednio przez oficjalne Google Gemini API (płatny plan).\n\n"
         "- Transkrypcje i załączniki **NIE** są zapisywane na serwerach.\n\n"
-        "- Dane **NIE** są wykorzystywane do trenowania modeli AI.\n\n"
+        "- Na płatnym planie dane **NIE** są wykorzystywane do trenowania modeli AI.\n\n"
         "- Po zamknięciu karty przeglądarki cała sesja bezpowrotnie znika z pamięci."
     )
 
@@ -265,8 +312,7 @@ with tab1:
             else:
                 with st.spinner("Globalna analiza transkrypcji i załączników oraz dopasowywanie nagłówków..."):
                     try:
-                        csv_url = LINK_DO_ARKUSZA.replace('/edit?usp=sharing', '/export?format=csv')
-                        df = pd.read_csv(csv_url); l_p = ""
+                        df = pobierz_baze_artykulow(LINK_DO_ARKUSZA); l_p = ""
                         for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Tytuł: {r['Nazwa']} | Kiedy dołączyć (Wskazanie): {r['Opis dla AI']}\n"
                         
                         genai.configure(api_key=api_key)
@@ -290,7 +336,7 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa disposition.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
@@ -328,7 +374,7 @@ with tab1:
                         
                         pakiety_danych_dla_ai.append(prompt_glowny)
                         
-                        res = m.generate_content(pakiety_danych_dla_ai)
+                        res = generuj_z_retry(m, pakiety_danych_dla_ai)
                         
                         st.text_area("Podgląd tekstu wynikowego:", value=res.text, height=350, key="podglad_gen")
                         st.download_button("📥 POBIERZ GOTOWY PLIK WORD (.DOCX)", konwertuj_do_docx(res.text), "Protokol_MeatPoint.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
@@ -351,7 +397,7 @@ with tab2:
     with col_top1:
         u_file = st.file_uploader("📂 Wgraj plik opisu (.docx):", type=["docx"], key=f"u_{st.session_state.v_key}")
     with col_top2:
-        st.write("</br>", unsafe_allow_html=True)
+        st.write("<br/>", unsafe_allow_html=True)
         if st.button("🔄 Nowy protokół / Reset", type="secondary", use_container_width=True):
             st.session_state.sekcje_dokumentu = None
             st.session_state.koszyk_nagran = {}
@@ -505,7 +551,7 @@ with tab2:
                                         f"4. ZAKAZ wstępów, podsumowań, komentarzy AI ('Oto zaktualizowana sekcja:' itp.).\n"
                                         f"5. Zwróć WYŁĄCZNIE gotowy, czysty tekst sekcji."
                                     )
-                                    wynik_txt = model_redaktor.generate_content(p_txt).text.strip()
+                                    wynik_txt = generuj_z_retry(model_redaktor, p_txt).text.strip()
                                     wyniki[s_nazwa] = wynik_txt
                                     progress_bar.progress(
                                         ukonczone / liczba_wszystkich,
