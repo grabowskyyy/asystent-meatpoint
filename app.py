@@ -1,5 +1,7 @@
-import streamlit as st, google.generativeai as genai, os, re, pandas as pd, uuid, base64
+import streamlit as st, os, re, pandas as pd, uuid, base64
 import time, random
+from google import genai
+from google.genai import types, errors
 from io import BytesIO
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
@@ -195,16 +197,21 @@ def konwertuj_do_docx(tekst_md):
     b = BytesIO(); doc.save(b); return b.getvalue()
 
 
-def generuj_z_retry(model, tresc, max_prob=5):
-    """Wywołuje model.generate_content z ponawianiem przy błędach limitu (429/quota/rate).
-    Backoff wykładniczy + jitter. Inne błędy rzuca natychmiast."""
+def generuj_z_retry(client, model_name, contents, config=None, max_prob=5):
+    """Wywołuje generate_content z ponawianiem przy błędach limitu (429/quota) i
+    przejściowych błędach serwera (5xx). Backoff wykładniczy + jitter.
+    Inne błędy rzuca natychmiast."""
     for proba in range(max_prob):
         try:
-            return model.generate_content(tresc)
-        except Exception as e:
-            k = str(e).lower()
-            czy_limit = any(x in k for x in ["429", "resource", "quota", "rate", "exhaust"])
-            if czy_limit and proba < max_prob - 1:
+            return client.models.generate_content(
+                model=model_name, contents=contents, config=config
+            )
+        except errors.APIError as e:
+            kod = getattr(e, "code", None)
+            tekst = str(e).lower()
+            czy_limit = kod == 429 or any(x in tekst for x in ["quota", "rate", "resource_exhausted"])
+            czy_serwer = isinstance(kod, int) and kod >= 500
+            if (czy_limit or czy_serwer) and proba < max_prob - 1:
                 time.sleep((2 ** proba) + random.uniform(0, 1))
                 continue
             raise
@@ -231,16 +238,15 @@ def przetworz_jedno_nagranie(args):
     """
     s_nazwa, a_bytes, oryginalna_tresc, api_key, model_choice = args
 
-    genai.configure(api_key=api_key)
+    # Własny klient w każdym wątku — bezpieczne przy równoległości (bez globalnego stanu)
+    client = genai.Client(api_key=api_key)
 
     # Krok 1: transkrypcja audio (zawsze flash — szybki i tani)
-    model_transkrypcji = genai.GenerativeModel(model_name="gemini-2.5-flash")
-    audio_part = {"mime_type": "audio/wav", "data": a_bytes}
+    audio_part = types.Part.from_bytes(data=a_bytes, mime_type="audio/wav")
     p_trans = "Przetwórz to nagranie audio i zwróć dokładny tekst (transkrypcję) tego, co zostało powiedziane, słowo w słowo, po polsku."
-    transkrypcja_uwagi = generuj_z_retry(model_transkrypcji, [p_trans, audio_part]).text.strip()
+    transkrypcja_uwagi = generuj_z_retry(client, "gemini-3.5-flash", [p_trans, audio_part]).text.strip()
 
     # Krok 2: integracja uwagi z oryginalną treścią sekcji
-    model_edytor = genai.GenerativeModel(model_name=model_choice)
     p_ed = (
         f"Jesteś precyzyjnym edytorem dokumentacji medycznej zwierząt BARF/BACF.\n"
         f"Zaktualizuj oryginalny tekst sekcji '{s_nazwa}' wyłącznie o fakty podyktowane w uwadze głosowej.\n\n"
@@ -252,7 +258,7 @@ def przetworz_jedno_nagranie(args):
         f"3. ZAKAZ wstępów i podsumowań ('Oto zaktualizowana sekcja:' itp.).\n"
         f"4. Zwróć WYŁĄCZNIE czystą, zaktualizowaną treść sekcji."
     )
-    nowa_tresc = generuj_z_retry(model_edytor, p_ed).text.strip()
+    nowa_tresc = generuj_z_retry(client, model_choice, p_ed).text.strip()
     return s_nazwa, nowa_tresc
 
 
@@ -279,11 +285,11 @@ with st.sidebar:
             st.caption("Wpisz najpierw klucz API powyżej, aby zobaczyć listę.")
         else:
             try:
-                genai.configure(api_key=api_key)
+                client_diag = genai.Client(api_key=api_key)
                 dostepne = [
                     mm.name.replace("models/", "")
-                    for mm in genai.list_models()
-                    if "generateContent" in mm.supported_generation_methods
+                    for mm in client_diag.models.list()
+                    if mm.supported_actions and "generateContent" in mm.supported_actions
                 ]
                 st.caption("Modele wspierające generateContent na Twoim koncie:")
                 st.code("\n".join(sorted(dostepne)) or "brak")
@@ -335,10 +341,8 @@ with tab1:
                         df = pobierz_baze_artykulow(LINK_DO_ARKUSZA); l_p = ""
                         for _, r in df.iterrows(): l_p += f"- Link: {r['URL']} | Tytuł: {r['Nazwa']} | Kiedy dołączyć (Wskazanie): {r['Opis dla AI']}\n"
                         
-                        genai.configure(api_key=api_key)
-                        
-                        m = genai.GenerativeModel(
-                            model_name=model_choice, 
+                        client = genai.Client(api_key=api_key)
+                        config_gen = types.GenerateContentConfig(
                             system_instruction=(
                                 "Jesteś doświadczonym, pedantycznym asystentem klinicznym dla dietetyk Anny Michalskiej. "
                                 "Twoim zadaniem jest stworzenie jednego, spójnego protokołu na podstawie trzech źródeł: ustnej transkrypcji, przesłanych dokumentów/zdjęć (załączników) oraz zewnętrznych tekstów wyekstrahowanych z plików Word.\n\n"
@@ -382,10 +386,9 @@ with tab1:
                                     teksty_z_docx += f"\n--- ZAWARTOŚĆ DOŁĄCZONEGO PLIKU WORD ({plik.name}) ---\n" + "\n".join(akapit_tekst) + "\n"
                                 else:
                                     bytes_data = plik.read()
-                                    pakiety_danych_dla_ai.append({
-                                        "mime_type": plik.type,
-                                        "data": bytes_data
-                                    })
+                                    pakiety_danych_dla_ai.append(
+                                        types.Part.from_bytes(data=bytes_data, mime_type=plik.type)
+                                    )
                         
                         prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja rozmowy:\n{transcript}\n"
                         
@@ -394,7 +397,7 @@ with tab1:
                         
                         pakiety_danych_dla_ai.append(prompt_glowny)
                         
-                        res = generuj_z_retry(m, pakiety_danych_dla_ai)
+                        res = generuj_z_retry(client, model_choice, pakiety_danych_dla_ai, config=config_gen)
                         
                         st.text_area("Podgląd tekstu wynikowego:", value=res.text, height=350, key="podglad_gen")
                         st.download_button("📥 POBIERZ GOTOWY PLIK WORD (.DOCX)", konwertuj_do_docx(res.text), "Protokol_MeatPoint.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
@@ -508,7 +511,7 @@ with tab2:
                 if st.button(f"🚀 WPROWADŹ WSZYSTKIE POPRAWKI ({liczba_wszystkich} szt.)", type="primary", use_container_width=True):
                     if not api_key: st.error("❌ Podaj klucz API Gemini!")
                     else:
-                        genai.configure(api_key=api_key)
+                        client = genai.Client(api_key=api_key)
                         progress_bar = st.progress(0, text=f"Przygotowanie... (0 / {liczba_wszystkich})")
                         wyniki = {}
                         bledy = []
@@ -554,7 +557,6 @@ with tab2:
                         # --- BLOK 2: Sekwencyjne przetwarzanie uwag tekstowych ---
                         # (szybkie - tylko redakcja tekstu, bez audio, nie wymaga wątków)
                         if st.session_state.koszyk_tekstowy:
-                            model_redaktor = genai.GenerativeModel(model_name=model_choice)
                             for s_nazwa, uwaga in list(st.session_state.koszyk_tekstowy.items()):
                                 ukonczone += 1
                                 try:
@@ -571,7 +573,7 @@ with tab2:
                                         f"4. ZAKAZ wstępów, podsumowań, komentarzy AI ('Oto zaktualizowana sekcja:' itp.).\n"
                                         f"5. Zwróć WYŁĄCZNIE gotowy, czysty tekst sekcji."
                                     )
-                                    wynik_txt = generuj_z_retry(model_redaktor, p_txt).text.strip()
+                                    wynik_txt = generuj_z_retry(client, model_choice, p_txt).text.strip()
                                     wyniki[s_nazwa] = wynik_txt
                                     progress_bar.progress(
                                         ukonczone / liczba_wszystkich,
