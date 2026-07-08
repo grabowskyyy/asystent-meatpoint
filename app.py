@@ -415,6 +415,7 @@ with tab2:
     if 'koszyk_tekstowy' not in st.session_state: st.session_state.koszyk_tekstowy = {}
     if 'v_key' not in st.session_state: st.session_state.v_key = str(uuid.uuid4())
     if 'klucze_mikrofonow' not in st.session_state: st.session_state.klucze_mikrofonow = {}
+    if 'wynik_poprawek' not in st.session_state: st.session_state.wynik_poprawek = None
 
     col_top1, col_top2 = st.columns([3, 1])
     with col_top1:
@@ -427,6 +428,7 @@ with tab2:
             st.session_state.koszyk_tekstowy = {}
             st.session_state.klucze_mikrofonow = {}
             st.session_state.v_key = str(uuid.uuid4())
+            st.session_state.wynik_poprawek = None
             st.rerun()
             
     if u_file and st.session_state.sekcje_dokumentu is None:
@@ -434,6 +436,20 @@ with tab2:
             st.session_state.sekcje_dokumentu = segmentuj_docx(u_file.read()); st.rerun()
 
     if st.session_state.sekcje_dokumentu:
+        # Trwały komunikat po wprowadzeniu poprawek — przetrwa przeładowanie strony (st.rerun)
+        if st.session_state.wynik_poprawek:
+            wynik = st.session_state.wynik_poprawek
+            if wynik["bledy"]:
+                for b in wynik["bledy"]:
+                    st.error(b)
+                if wynik["ok"]:
+                    st.warning(f"⚠️ Wprowadzono {wynik['ok']} poprawek, {len(wynik['bledy'])} nie udało się przetworzyć.")
+            else:
+                st.success(f"✅ Gotowe! Wszystkie {wynik['ok']} poprawki naniesione na protokół.")
+            if wynik["ok"]:
+                st.info("⬇️ Zjedź na dół do sekcji **3️⃣ Pobieranie gotowego dokumentu** i kliknij **📦 Generuj finalny plik Word z poprawkami**, aby pobrać zaktualizowany protokół.")
+            st.session_state.wynik_poprawek = None  # pokaż raz, potem wyczyść
+
         st.markdown("---")
         col_ed1, col_ed2 = st.columns([1, 1], gap="large")
         
@@ -597,13 +613,9 @@ with tab2:
 
                         progress_bar.empty()
 
-                        if bledy:
-                            for b in bledy:
-                                st.error(b)
-                            if wyniki:
-                                st.warning(f"⚠️ {len(wyniki)} poprawek wprowadzono pomyślnie, {len(bledy)} nie udało się przetworzyć.")
-                        else:
-                            st.success(f"🎉 Wszystkie {len(wyniki)} poprawki wprowadzone pomyślnie!")
+                        # Zapisz wynik do pamięci sesji — komunikat pokaże się PO przeładowaniu,
+                        # na górze edytora, gdzie jest trwały i widoczny dla użytkownika.
+                        st.session_state.wynik_poprawek = {"ok": len(wyniki), "bledy": list(bledy)}
 
                         st.rerun()
 
