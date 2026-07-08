@@ -266,9 +266,25 @@ with st.sidebar:
         [
             "gemini-3.5-flash", 
             "gemini-3.1-flash-lite", 
-            "gemini-3.1-pro"
+            "gemini-3.1-pro-preview"
         ]
     )
+
+    with st.expander("🔍 Pokaż dostępne modele (diagnostyka)"):
+        if not api_key:
+            st.caption("Wpisz najpierw klucz API powyżej, aby zobaczyć listę.")
+        else:
+            try:
+                genai.configure(api_key=api_key)
+                dostepne = [
+                    mm.name.replace("models/", "")
+                    for mm in genai.list_models()
+                    if "generateContent" in mm.supported_generation_methods
+                ]
+                st.caption("Modele wspierające generateContent na Twoim koncie:")
+                st.code("\n".join(sorted(dostepne)) or "brak")
+            except Exception as e:
+                st.caption(f"Nie udało się pobrać listy: {e}")
 
     st.markdown("---")
     st.info(
