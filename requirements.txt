@@ -1,4 +1,4 @@
-google-generativeai
+google-genai
 python-docx
 pandas
 streamlit-mic-recorder
