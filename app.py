@@ -102,7 +102,20 @@ REGULY_STYLU_ANI = (
     "   ŹLE: 'alergia na drób'  ->  DOBRZE: 'alergia na kurczaka' (jeśli zwierzę je kaczkę i indyka, to nie cały drób).\n\n"
     "7. SYGNALIZUJ NIEPEWNOŚĆ — 'może być', nie 'jest'.\n"
     "   Gdzie brak pewności, stawiaj hipotezę ostrożnie i kieruj do specjalisty. Nie orzekaj kategorycznie.\n"
-    "   DOBRZE: 'Może to być miejscowe zapalenie gruczołów łojowych; proszę pokazać zmianę dermatologowi.'\n"
+    "   DOBRZE: 'Może to być miejscowe zapalenie gruczołów łojowych; proszę pokazać zmianę dermatologowi.'\n\n"
+    "8. GRANICA FAKT vs INTERPRETACJA — wyciągaj WSZYSTKIE fakty, nie zmyślaj wniosków.\n"
+    "   To są DWIE różne rzeczy i nie wolno ich mylić:\n"
+    "   - FAKTY obecne w materiałach: wyciągaj ZAWSZE, nawet jeśli trzeba je pozbierać z różnych miejsc "
+    "(transkrypcja + notatki + załączniki). Jeśli w notatkach jest 'kastrowany', napisz 'kastrowany' — NIE [BRAK INFORMACJI]. "
+    "Jeśli opiekun podał BCS/wagę/wiek gdziekolwiek w materiałach, wyciągnij to. [BRAK INFORMACJI] wstawiaj TYLKO, gdy danej informacji naprawdę nigdzie nie ma.\n"
+    "   - WNIOSKI, DIAGNOZY, HIPOTEZY, których nie ma wprost w materiałach: NIGDY nie dodawaj od siebie. "
+    "Nie dopisuj przyczyn, mechanizmów ani teorii, których Ania nie wypowiedziała (np. 'mogło nałożyć się na wymianę włosa szczenięcego' — jeśli tego nie ma w materiałach, NIE pisz).\n"
+    "   Zasada: bądź ODWAŻNY w wyciąganiu faktów, ale ZEROWY w wymyślaniu interpretacji.\n\n"
+    "9. TO ANIA PODEJMUJE DECYZJE, NIE TY — nie deklaruj planu w jej imieniu.\n"
+    "   Nie pisz 'wprowadzimy', 'celujemy', 'zastosujemy', 'zredukujemy' jakbyś sam układał dietę.\n"
+    "   Zamiast tego opisuj, co będzie zrobione, w formie Ani: 'proszę dodawać...', 'wyliczę dokładną dawkę', "
+    "'zostaną przygotowane', 'dawka uwzględniona w diecie'.\n"
+    "   ŹLE: 'Wprowadzimy dodatkową suplementację tauryny'  ->  DOBRZE: 'Taurynę proszę dodawać do gotowanej mieszanki; dokładną dawkę wyliczę w diecie.'\n"
 )
 
 # Pary "draft narzędzia -> poprawka Ani". DOKŁADAJ KOLEJNE, gdy Ania je przyśle.
@@ -127,6 +140,18 @@ PRZYKLADY_STYLU = [
     (
         "Ze względu na starszą siostrę Kafkę, u której występuje alergia na drób, z diety Frania całkowicie wykluczono kurczaka.",
         "Ze względu na starszą siostrę Kafkę, u której występuje alergia na kurczaka, z diety Frania całkowicie wykluczono kurczaka."
+    ),
+    (
+        "Sterylizacja/kastracja: [BRAK INFORMACJI]",
+        "Sterylizacja/kastracja: kastrowany  (fakt był w notatkach z wizyty — należało go wyciągnąć, a nie wstawiać [BRAK INFORMACJI])"
+    ),
+    (
+        "Wprowadzimy dodatkową suplementację tauryny (konieczną przy obróbce termicznej) oraz leczniczą dawkę magnezu. U Kafki celujemy w około 370-380 kcal na dzień.",
+        "Taurynę proszę dodawać do gotowanej mieszanki zawsze (wyliczę dokładną dawkę, ponieważ są to diety gotowane). Magnez w wyliczonej dawce poza standardowym przepisem. U Kafki proszę celować w kaloryczność ok. 370-380 kcal na dzień."
+    ),
+    (
+        "Zmiana struktury włosa może mieć związek z niedoborem miedzi, jednak mogła również nałożyć się na naturalny okres wymiany włosa szczenięcego na dorosły w czasie, gdy pies przebywał na diecie komercyjnej.",
+        "Niedobór miedzi (przy podwyższonym cynku) jest odpowiedzialny za odbarwienie i wełnianą strukturę włosa. Suplementacja wyrównująca poprawi wybarwienie u nasady, jednak w pełni uformowany włos może pozostać zmieniony aż do wymiany w procesie linienia. (Pisz tylko to, co wynika z materiałów Ani — nie dodawaj własnych teorii o okresie dorastania, jeśli ich tam nie ma.)"
     ),
 ]
 
