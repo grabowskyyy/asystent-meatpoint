@@ -565,7 +565,11 @@ with tab1:
                                 "Stosuj powyższe siedem zasad stylu Ani w KAŻDYM zdaniu, które piszesz.\n\n"
                                 "ZASADA INTELIGENTNEGO DOPASOWANIA (CROSS-ANALYSIS):\n"
                                 "1. Przeanalizuj treść każdego załącznika. Informacje w nich zawarte mogą dotyczyć DOWOLNEJ sekcji protokołu (notatki o wodzie, uwagi o smaczkach, dawki leków, opisy samopoczucia, wyniki badań).\n"
-                                "2. Przyporządkuj fakty tematycznie: informacje o diecie komercyjnej do 'Karmy komercyjne', informacje o dawkowaniu wody do 'Piciu/Jakiej wody używać', wyniki krwi do 'Aktualne badania', a opisy dolegliwości do 'Powód konsultacji' lub 'Kał/Biegunka/Wymioty'.\n"
+                                "2. Przyporządkuj fakty tematycznie: informacje o diecie komercyjnej do 'Karmy komercyjne', informacje o dawkowaniu wody do 'Piciu/Jakiej wody używać', a opisy dolegliwości do 'Powód konsultacji' lub 'Kał/Biegunka/Wymioty'.\n"
+                                "   🚨 WYJĄTEK — WYNIKI BADAŃ LABORATORYJNYCH: jeśli w załącznikach są surowe wyniki badań (PDF/zdjęcie z laboratorium, tabele z wartościami) — NIE odczytuj ich, NIE przepisuj wartości i NIE interpretuj. "
+                                "Do sekcji 'Aktualne badania' trafia WYŁĄCZNIE to, co Ania sama powiedziała lub napisała o badaniach własnymi słowami.\n"
+                                "   Uwaga na rozróżnienie: jeśli w NOTATKACH ANI jest zdanie typu 'kreatynina wzrosła', 'morfologia w normie' — to są JEJ słowa i MASZ je wykorzystać. "
+                                "Zakaz dotyczy wyłącznie samodzielnego odczytywania liczb z dokumentów laboratoryjnych.\n"
                                 "3. Zintegruj wiedzę z transkrypcji i załączników. Jeśli dokumenty i transkrypcja mówią o tym samym, połącz te fakty w spójny opis.\n\n"
                                 "ZASADY OGÓLNE:\n"
                                 "- Pisz WYŁĄCZNIE prawdę na podstawie dostarczonych materiałów. ZAKAZ zmyślania faktów czy dawek.\n"
@@ -587,7 +591,7 @@ with tab1:
                             elif naglowek == "Wprowadzanie suplementów:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
                             elif naglowek == "Aktualne badania:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Zapisz WYŁĄCZNIE to, co sama Ania powiedziała o badaniach w transkrypcji (np. 'morfologia w normie', 'miedź wyraźny niedobór', data badania).\n- 🚨 ZAKAZ analizowania wyników z załączników. ZAKAZ przepisywania wartości liczbowych z plików PDF/zdjęć. ZAKAZ własnej oceny czy interpretacji wyników.\n- Jeśli Ania nie powiedziała nic o badaniach, wstaw [BRAK INFORMACJI].\n"
+                                instrukcja_szablonu += f"## {naglowek}\n- Zapisz WYŁĄCZNIE to, co sama Ania powiedziała lub napisała o badaniach WŁASNYMI SŁOWAMI — w transkrypcji LUB w swoich notatkach (np. 'morfologia w normie', 'miedź wyraźny niedobór', 'kreatynina wzrosła', data badania). To są jej słowa i MASZ je wykorzystać.\n- 🚨 ZAKAZ samodzielnego odczytywania i przepisywania wartości liczbowych z surowych dokumentów laboratoryjnych (PDF, zdjęcia, tabele wyników). ZAKAZ własnej oceny czy interpretacji wyników.\n- Jeśli Ania nic o badaniach nie powiedziała ani nie napisała, wstaw [BRAK INFORMACJI].\n"
                             elif naglowek == "Badania kontrolne:":
                                 instrukcja_szablonu += f"## {naglowek}\n- Przedstaw WYŁĄCZNIE badania kontrolne, które Ania sama wskazała w transkrypcji lub notatkach, wraz z podanymi przez nią terminami.\n- ZAKAZ proponowania własnych badań kontrolnych. Jeśli Ania nic nie wskazała, wstaw [DO UZUPEŁNIENIA].\n"
                             else:
