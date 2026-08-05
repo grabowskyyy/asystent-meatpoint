@@ -77,6 +77,14 @@ REGULY_STYLU_ANI = (
     "Jesteś sekretarzem medycznym dietetyk Anny Michalskiej. Twoim zadaniem jest WIERNIE PRZEŁOŻYĆ "
     "materiały z wizyty na profesjonalny opis w JEJ stylu. NIE jesteś drugim dietetykiem. "
     "NIE tworzysz własnych diagnoz, ocen, zaleceń ani wniosków. Referujesz to, co wynika z materiałów — nie dodajesz nic od siebie.\n\n"
+    "🎯 TWÓJ GŁÓWNY CEL — PRZECZYTAJ ZANIM ZACZNIESZ:\n"
+    "Twoim NADRZĘDNYM zadaniem jest WYDOBYĆ JAK NAJWIĘCEJ FAKTÓW z materiałów i uporządkować je w sekcjach. "
+    "Po to powstało to narzędzie — żeby Ania nie musiała przepisywać wywiadu ręcznie.\n"
+    "Poniższe zakazy dotyczą WYŁĄCZNIE interpretacji, diagnoz i zaleceń — NIE faktów.\n"
+    "Bądź MAKSYMALNIE dokładny i skrupulatny w wyławianiu faktów (co powiedział Opiekun, co powiedziała Ania, "
+    "co wynika z notatek). Wypełniaj sekcje treścią wszędzie tam, gdzie materiały cokolwiek na dany temat zawierają.\n"
+    "Znaczniki [BRAK INFORMACJI] i [DO UZUPEŁNIENIA] to OSTATECZNOŚĆ, a nie wygodna wymówka. "
+    "Dokument pełen znaczników = źle wykonana praca. Dokument pełen wydobytych faktów = dobrze wykonana praca.\n\n"
     "SIEDEM ZASAD STYLU ANI:\n\n"
     "1. TŁUMACZ JĘZYK OPIEKUNA NA PROFESJONALNY — nie przepisuj go dosłownie.\n"
     "   Potoczne, emocjonalne słowa Opiekuna zamień na neutralne, zawodowe.\n"
@@ -115,7 +123,20 @@ REGULY_STYLU_ANI = (
     "   Nie pisz 'wprowadzimy', 'celujemy', 'zastosujemy', 'zredukujemy' jakbyś sam układał dietę.\n"
     "   Zamiast tego opisuj, co będzie zrobione, w formie Ani: 'proszę dodawać...', 'wyliczę dokładną dawkę', "
     "'zostaną przygotowane', 'dawka uwzględniona w diecie'.\n"
-    "   ŹLE: 'Wprowadzimy dodatkową suplementację tauryny'  ->  DOBRZE: 'Taurynę proszę dodawać do gotowanej mieszanki; dokładną dawkę wyliczę w diecie.'\n"
+    "   ŹLE: 'Wprowadzimy dodatkową suplementację tauryny'  ->  DOBRZE: 'Taurynę proszę dodawać do gotowanej mieszanki; dokładną dawkę wyliczę w diecie.'\n\n"
+    "10. NIE DORADZAJ — ODNOTUJ I ZOSTAW MIEJSCE DLA ANI. (BARDZO WAŻNE)\n"
+    "   Rozróżnij DWA rodzaje zaleceń:\n"
+    "   a) ZALECENIA, KTÓRE ANIA WYPOWIEDZIAŁA (w transkrypcji lub notatkach) — zapisz je WIERNIE. To jest Twoje główne zadanie.\n"
+    "   b) ZALECENIA, KTÓRYCH ANIA NIE WYPOWIEDZIAŁA — NIGDY ich nie wymyślaj. Nawet jeśli wydają się oczywiste lub nieszkodliwe.\n"
+    "   ZAKAZANE zwroty, jeśli Ania ich nie powiedziała: 'proszę obserwować', 'warto rozważyć', 'wskazana jest konsultacja', "
+    "'zaleca się', 'należy skontrolować', 'sugeruję'.\n"
+    "   ZAMIAST TEGO: odnotuj sam FAKT, że Opiekun coś zgłosił, i postaw znacznik [DO UZUPEŁNIENIA] — Ania sama wpisze ocenę i zalecenie.\n"
+    "   ŹLE: 'U Kafki pojawiają się tłuste zmiany na sierści. Może to być zapalenie gruczołów łojowych; proszę obserwować i pokazać dermatologowi.'\n"
+    "   DOBRZE: 'Opiekunka zgłasza okresowo pojawiające się tłuste, okrągłe zmiany na sierści u Kafki, bez świądu; skóra różowa i elastyczna. [DO UZUPEŁNIENIA]'\n\n"
+    "ZNACZNIKI — używaj ich świadomie, to dwie RÓŻNE rzeczy:\n"
+    "   [BRAK INFORMACJI] = nikt o tym nie mówił, brak danych w materiałach.\n"
+    "   [DO UZUPEŁNIENIA] = temat pojawił się w wywiadzie, fakt jest odnotowany, ale ocena/zalecenie należy do Ani.\n"
+    "   Nie wstawiaj [DO UZUPEŁNIENIA] wszędzie hurtowo — tylko tam, gdzie realnie brakuje oceny Ani do zgłoszonego tematu.\n"
 )
 
 # Pary "draft narzędzia -> poprawka Ani". DOKŁADAJ KOLEJNE, gdy Ania je przyśle.
@@ -152,6 +173,26 @@ PRZYKLADY_STYLU = [
     (
         "Zmiana struktury włosa może mieć związek z niedoborem miedzi, jednak mogła również nałożyć się na naturalny okres wymiany włosa szczenięcego na dorosły w czasie, gdy pies przebywał na diecie komercyjnej.",
         "Niedobór miedzi (przy podwyższonym cynku) jest odpowiedzialny za odbarwienie i wełnianą strukturę włosa. Suplementacja wyrównująca poprawi wybarwienie u nasady, jednak w pełni uformowany włos może pozostać zmieniony aż do wymiany w procesie linienia. (Pisz tylko to, co wynika z materiałów Ani — nie dodawaj własnych teorii o okresie dorastania, jeśli ich tam nie ma.)"
+    ),
+    (
+        "U Kafki okazjonalnie pojawiają się tłuste, okrągłe zmiany na sierści. Może to być miejscowe zapalenie gruczołów łojowych — proszę zmianę obserwować i przy nawrocie pokazać ją dermatologowi.",
+        "Opiekunka zgłasza okresowo pojawiające się u Kafki tłuste, okrągłe zmiany na sierści, bez świądu; skóra różowa i elastyczna. [DO UZUPEŁNIENIA]"
+    ),
+    (
+        "Aktualne badania: Morfologia (WBC 13.52 tys., RBC 7.02 mln, HGB 16 g%) - w normie. Kreatynina 0.9 mg/dl - w normie. Mikroelementy: Cynk 199.0 µg/dl - w górnej granicy normy; Miedź 65.8 µg/dl – wyraźny i bardzo silny niedobór.",
+        "Aktualne badania: Badanie krwi Frania z dn. 25.06.2026 r. — morfologia i biochemia w normie, miedź wyraźny niedobór. (Zapisuj TYLKO to, co Ania sama powiedziała o badaniach — nie odczytuj i nie przepisuj wartości z załączników ani zdjęć.)"
+    ),
+    (
+        "Zaleca się ograniczenie podawania suplementów bezpośrednio do jamy ustnej. Priorytetem jest akceptacja diety przez pacjenta.",
+        "Liczy się dobrostan kota. Kicia karmiona paręnaście razy dziennie suplementami zamiast dietą nie jest tym, co można nazwać kotem w dobrostanie. Zależy nam przede wszystkim, żeby akceptowała dietę. Kot musi mieć przyjemność z jedzenia i z życia samego w sobie."
+    ),
+    (
+        "Opiekunka błędnie zakłada, że karmy nerkowe będą odpowiednie dla pacjentki. Jest to nieprawidłowy wybór.",
+        "Kicia to nie jest po prostu „kot nerkowy”. To kot z zaburzeniami wchłaniania żelaza, chorobą jelit, przewlekłym zapaleniem trzustki, euthyroid sick syndrome itp. Karmy nerkowe charakteryzują się bardzo dużą ilością tłuszczu i węglowodanów, a skrajnie niską ilością białka — w przypadku Kici restrykcyjne karmy nerkowe nie są wskazane."
+    ),
+    (
+        "Kategorycznie nie: ziemniaki, cukinia ze skórką, zbyt czerwone gatunki mięsa.",
+        "Kategorycznie nie:\n• (Prawdopodobnie) Ziemniaki – zwłaszcza po rozmrożeniu.\n• Cukinia podawana ze skórką lub nasionami.\n• (Prawdopodobnie) Zbyt czerwone i intensywne gatunki mięsa (np. wyrazista karkówka wieprzowa) – choć był moment, kiedy chętnie zjadła ją jako mięso surowe.\n(Ania oznacza niepewność słowem „(Prawdopodobnie)” i ZACHOWUJE sprzeczne obserwacje zamiast je wygładzać.)"
     ),
 ]
 
@@ -210,27 +251,43 @@ def add_hyperlink(p, url, text):
     nr.append(rPr); tn = OxmlElement('w:t'); tn.text = text; nr.append(tn); hl.append(nr); p._p.append(hl)
     return hl
 
+# Znaczniki wymagające uwagi Ani — renderowane kolorem i pogrubieniem w Wordzie,
+# żeby były nie do przeoczenia przy przeglądaniu dokumentu.
+ZNACZNIKI_UWAGI = {
+    '[BRAK INFORMACJI]': RGBColor(220, 38, 38),    # czerwony  — nikt o tym nie mówił
+    '[DO UZUPEŁNIENIA]': RGBColor(217, 119, 6),    # pomarańczowy — czeka na ocenę Ani
+}
+
+
+def _dodaj_tekst_z_formatowaniem(p, tekst):
+    """Dodaje zwykły tekst do akapitu z obsługą pogrubień (**) i linków."""
+    sub_segs = tekst.split('**')
+    for idx, sub_seg in enumerate(sub_segs):
+        if not sub_seg:
+            continue
+        czy_pogrubiony = (idx % 2 == 1)
+        url_segs = re.split(r'(https?://[^\s]+)', sub_seg)
+        for u_idx, u_seg in enumerate(url_segs):
+            if u_idx % 2 == 1:
+                add_hyperlink(p, u_seg, u_seg)
+            else:
+                run = p.add_run(u_seg)
+                if czy_pogrubiony:
+                    run.bold = True
+
+
 def parsuj_i_formatuj_tekst(p, tekst):
-    parts = tekst.split('[BRAK INFORMACJI]')
-    for i, part in enumerate(parts):
-        if part:
-            sub_segs = part.split('**')
-            for idx, sub_seg in enumerate(sub_segs):
-                if not sub_seg: continue
-                czy_pogrubiony = (idx % 2 == 1)
-                url_segs = re.split(r'(https?://[^\s]+)', sub_seg)
-                for u_idx, u_seg in enumerate(url_segs):
-                    if u_idx % 2 == 1:
-                        add_hyperlink(p, u_seg, u_seg)
-                    else:
-                        run = p.add_run(u_seg)
-                        if czy_pogrubiony:
-                            run.bold = True
-                            
-        if i < len(parts) - 1:
-            ra = p.add_run('[BRAK INFORMACJI]')
+    """Renderuje tekst, wyróżniając kolorem znaczniki [BRAK INFORMACJI] i [DO UZUPEŁNIENIA]."""
+    wzor = r'(\[BRAK INFORMACJI\]|\[DO UZUPEŁNIENIA\])'
+    for seg in re.split(wzor, tekst):
+        if not seg:
+            continue
+        if seg in ZNACZNIKI_UWAGI:
+            ra = p.add_run(seg)
             ra.bold = True
-            ra.font.color.rgb = RGBColor(220, 38, 38)
+            ra.font.color.rgb = ZNACZNIKI_UWAGI[seg]
+        else:
+            _dodaj_tekst_z_formatowaniem(p, seg)
 
 def konwertuj_do_docx(tekst_md):
     doc = Document()
@@ -513,7 +570,9 @@ with tab1:
                                 "ZASADY OGÓLNE:\n"
                                 "- Pisz WYŁĄCZNIE prawdę na podstawie dostarczonych materiałów. ZAKAZ zmyślania faktów czy dawek.\n"
                                 "- Jeśli chcesz coś wyróżnić, używaj podwójnych gwiazdek **tekst**.\n"
-                                "- Jeśli w źródłach brakuje danych dla danej sekcji, wstaw fragment [BRAK INFORMACJI]."
+                                "- Jeśli w źródłach brakuje danych dla danej sekcji, wstaw fragment [BRAK INFORMACJI].\n"
+                                "- Jeśli temat pojawił się w wywiadzie, ale brakuje oceny/zalecenia Ani — odnotuj sam fakt "
+                                "i wstaw [DO UZUPEŁNIENIA]. NIE wymyślaj zalecenia za Anię."
                             )
                         )
                         
@@ -528,9 +587,9 @@ with tab1:
                             elif naglowek == "Wprowadzanie suplementów:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
                             elif naglowek == "Aktualne badania:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Wypisz parametry, wyniki i opisy badań laboratoryjnych/obrazowych (krwi, moczu, USG) znalezione w transkrypcji lub bezpośrednio w plikach załączników. Przedstaw je w postaci czytelnych punktów. Jeśli brak typowych badań laboratoryjnych w obu źródłach, wstaw [BRAK INFORMACJI].\n"
+                                instrukcja_szablonu += f"## {naglowek}\n- Zapisz WYŁĄCZNIE to, co sama Ania powiedziała o badaniach w transkrypcji (np. 'morfologia w normie', 'miedź wyraźny niedobór', data badania).\n- 🚨 ZAKAZ analizowania wyników z załączników. ZAKAZ przepisywania wartości liczbowych z plików PDF/zdjęć. ZAKAZ własnej oceny czy interpretacji wyników.\n- Jeśli Ania nie powiedziała nic o badaniach, wstaw [BRAK INFORMACJI].\n"
                             elif naglowek == "Badania kontrolne:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Przedstaw zalecane przez Annę badania kontrolne w formie czystej listy punktów wraz z przypisanymi im w transkrypcji lub dokumentach terminami. Jeśli brak, wstaw sztywno [BRAK INFORMACJI].\n"
+                                instrukcja_szablonu += f"## {naglowek}\n- Przedstaw WYŁĄCZNIE badania kontrolne, które Ania sama wskazała w transkrypcji lub notatkach, wraz z podanymi przez nią terminami.\n- ZAKAZ proponowania własnych badań kontrolnych. Jeśli Ania nic nie wskazała, wstaw [DO UZUPEŁNIENIA].\n"
                             else:
                                 prefix = "" if naglowek.startswith("###") else "## "
                                 instrukcja_szablonu += f"{prefix}{naglowek}\n- Analizuj pod kątem tego nagłówka zarówno tekst transkrypcji, jak i dołączone pliki załączników. Wyciągnij precyzyjne fakty.\n"
