@@ -322,6 +322,57 @@ def generuj_z_retry(client, model_name, contents, config=None, max_prob=5):
             raise
 
 
+def czytelny_blad(e, kontekst=""):
+    """Zamienia techniczny błąd API na zrozumiały komunikat po polsku z instrukcją,
+    co użytkownik ma zrobić. Nieznane błędy zwraca w oryginale (dla diagnostyki)."""
+    tekst = str(e).lower()
+    kod = getattr(e, "code", None)
+
+    # 503 / przeciążenie serwerów Google (najczęstsze przy trybie Dokładnym - model preview)
+    if kod == 503 or "unavailable" in tekst or "high demand" in tekst or "overloaded" in tekst:
+        return (
+            "⏳ **Serwery Google są chwilowo przeciążone** (zbyt wielu użytkowników naraz).\n\n"
+            "To **nie jest błąd aplikacji** — mija samo, zwykle w kilka–kilkanaście minut.\n\n"
+            "**Co zrobić:**\n"
+            "1. Odczekaj chwilę i kliknij przycisk ponownie (transkrypcja i załączniki zostają na miejscu), **albo**\n"
+            "2. Przełącz w panelu bocznym tryb AI na **💨 Standardowy** — działa na stabilniejszym modelu "
+            "i praktycznie nie łapie przeciążeń.\n\n"
+            "💡 Tryb *Dokładny* najczęściej bywa przeciążony wieczorami."
+        )
+
+    # 429 / wyczerpany limit zapytań
+    if kod == 429 or "quota" in tekst or "resource_exhausted" in tekst or "rate limit" in tekst:
+        return (
+            "🚦 **Przekroczony limit zapytań do Google** (zbyt wiele operacji w krótkim czasie).\n\n"
+            "**Co zrobić:** odczekaj 1–2 minuty i spróbuj ponownie. "
+            "Jeśli powtarza się często — sprawdź limity swojego konta Google AI Studio."
+        )
+
+    # 404 / nieistniejący lub wycofany model
+    if kod == 404 or "not found" in tekst:
+        return (
+            "🔍 **Wybrany model AI jest niedostępny** (mógł zostać wycofany przez Google).\n\n"
+            "**Co zrobić:** przełącz tryb AI w panelu bocznym na inny. "
+            "Listę aktualnie działających modeli zobaczysz w panelu bocznym w sekcji "
+            "*🔍 Pokaż dostępne modele (diagnostyka)*."
+        )
+
+    # 400/401/403 - problem z kluczem API
+    if kod in (400, 401, 403) or "api key" in tekst or "permission" in tekst or "unauthenticated" in tekst:
+        return (
+            "🔑 **Problem z kluczem API.**\n\n"
+            "**Co zrobić:** sprawdź, czy klucz w panelu bocznym jest poprawny i aktywny "
+            "oraz czy na koncie Google AI Studio jest włączone rozliczanie (płatny plan)."
+        )
+
+    # Problem z pobraniem bazy artykułów z Arkusza Google
+    if "arkusz" in tekst or "columns" in tekst or "csv" in tekst:
+        return f"📊 **Problem z bazą artykułów (Arkusz Google):**\n\n{e}"
+
+    # Nieznany błąd - pokaż oryginał, żeby dało się zdiagnozować
+    return f"⚠️ Wystąpił nieoczekiwany błąd{kontekst}:\n\n`{e}`"
+
+
 @st.cache_data(ttl=3600)
 def pobierz_baze_artykulow(url):
     """Pobiera bazę artykułów z Arkusza Google (cache 1h) i waliduje kolumny."""
@@ -511,7 +562,7 @@ with tab1:
                         st.text_area("Podgląd tekstu wynikowego:", value=res.text, height=350, key="podglad_gen")
                         st.download_button("📥 POBIERZ GOTOWY PLIK WORD (.DOCX)", konwertuj_do_docx(res.text), "Protokol_MeatPoint.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
                     except Exception as e: 
-                        st.error(f"🚨 Błąd generatora: {e}")
+                        st.error(czytelny_blad(e, " podczas generowania opisu"))
 
 # ==============================================================================
 # 🎙️ ZAKŁADKA 2: GŁOSOWY EDYTOR PROTOKOŁÓW — RÓWNOLEGŁE PRZETWARZANIE
@@ -681,13 +732,16 @@ with tab2:
                                                 text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ✅ 🎙️ {czytelna_nazwa(nazwa)}"
                                             )
                                         except Exception as e:
-                                            bledy.append(f"❌ Błąd głosowy w sekcji '{czytelna_nazwa(s_nazwa)}': {e}")
+                                            bledy.append(
+                                                f"🎙️ **Sekcja: {czytelna_nazwa(s_nazwa)} (uwaga głosowa)**\n\n"
+                                                + czytelny_blad(e)
+                                            )
                                             progress_bar.progress(
                                                 ukonczone / liczba_wszystkich,
                                                 text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ⚠️ {czytelna_nazwa(s_nazwa)}"
                                             )
                             except Exception as e:
-                                bledy.append(f"❌ Krytyczny błąd głosowy: {e}")
+                                bledy.append(czytelny_blad(e, " podczas przetwarzania nagrań"))
 
                         # --- BLOK 2: Sekwencyjne przetwarzanie uwag tekstowych ---
                         # (szybkie - tylko redakcja tekstu, bez audio, nie wymaga wątków)
@@ -715,7 +769,10 @@ with tab2:
                                         text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ✅ ✏️ {czytelna_nazwa(s_nazwa)}"
                                     )
                                 except Exception as e:
-                                    bledy.append(f"❌ Błąd tekstowy w sekcji '{czytelna_nazwa(s_nazwa)}': {e}")
+                                    bledy.append(
+                                        f"✏️ **Sekcja: {czytelna_nazwa(s_nazwa)} (uwaga tekstowa)**\n\n"
+                                        + czytelny_blad(e)
+                                    )
                                     progress_bar.progress(
                                         ukonczone / liczba_wszystkich,
                                         text=f"Przetworzono: {ukonczone} / {liczba_wszystkich} — ⚠️ {czytelna_nazwa(s_nazwa)}"
