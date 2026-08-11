@@ -32,17 +32,16 @@ TEKST_TYNDALIZACJA_STALY = (
     "Proces ten skutecznie eliminuje formy przetrwalnikowe bakterii (m.in. Clostridium botulinum - jadu kiełbasianego), "
     "które mogłyby namnażać się w warunkach beztlenowych zamkniętego słoika.\n\n"
     "Pełną instrukcję krok po kroku, jak prawidłowo i bezpiecznie przeprowadzić ten proces w domowych warunkach, "
-    "znajdą Państwo w naszym artykule na blogu: https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic\n\n"
-    "Dodatkowo przygotowaliśmy dla Państwa praktyczny poradnik w formie wideo na platformie YouTube, "
-    "gdzie pokazujemy cały proces krok po kroku: https://www.youtube.com/watch?v=tyfT3kmq3ME"
+    "znajdą Państwo w [naszym artykule na blogu o tyndalizacji](https://meatpoint.io/pl/barf-wiedza/tyndalizacja-czyli-jak-przechowywac-posilki-jesli-nie-chcemy-ich-mrozic).\n\n"
+    "Dodatkowo przygotowaliśmy dla Państwa [praktyczny poradnik wideo na YouTube](https://www.youtube.com/watch?v=tyfT3kmq3ME), "
+    "gdzie pokazujemy cały proces krok po kroku."
 )
 
 TEKST_INNE_SMACZKI_STALY = (
     "Wprowadzając do codziennej rutyny jakiekolwiek inne smaczki komercyjne, należy bezwzględnie "
     "pamiętać o kontrolowaniu ich kaloryczności, aby nie zaburzyć bilansu nowej diety pacjenta.\n\n"
     "Szczegółowy poradnik oraz instrukcję, jak samodzielnie wyliczyć kaloryczność dowolnego produktu komercyjnego "
-    "na podstawie danych z etykiety, znajdą Państwo w naszym artykule: "
-    "https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow"
+    "na podstawie danych z etykiety, znajdą Państwo w [naszym artykule o kaloryczności smaczków](https://meatpoint.io/pl/barf-wiedza/smaczki-i-dodatkowe-kalorie-obliczanie-kalorycznosci-komercyjnych-produktow)."
 )
 
 TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
@@ -85,7 +84,7 @@ REGULY_STYLU_ANI = (
     "co wynika z notatek). Wypełniaj sekcje treścią wszędzie tam, gdzie materiały cokolwiek na dany temat zawierają.\n"
     "Znaczniki [BRAK INFORMACJI] i [DO UZUPEŁNIENIA] to OSTATECZNOŚĆ, a nie wygodna wymówka. "
     "Dokument pełen znaczników = źle wykonana praca. Dokument pełen wydobytych faktów = dobrze wykonana praca.\n\n"
-    "SIEDEM ZASAD STYLU ANI:\n\n"
+    "ZASADY STYLU ANI:\n\n"
     "1. TŁUMACZ JĘZYK OPIEKUNA NA PROFESJONALNY — nie przepisuj go dosłownie.\n"
     "   Potoczne, emocjonalne słowa Opiekuna zamień na neutralne, zawodowe.\n"
     "   ŹLE: 'Opiekunka odwaliła ogromną pracę'  ->  DOBRZE: 'Po znacznej pracy behawioralnej'\n\n"
@@ -136,7 +135,11 @@ REGULY_STYLU_ANI = (
     "ZNACZNIKI — używaj ich świadomie, to dwie RÓŻNE rzeczy:\n"
     "   [BRAK INFORMACJI] = nikt o tym nie mówił, brak danych w materiałach.\n"
     "   [DO UZUPEŁNIENIA] = temat pojawił się w wywiadzie, fakt jest odnotowany, ale ocena/zalecenie należy do Ani.\n"
-    "   Nie wstawiaj [DO UZUPEŁNIENIA] wszędzie hurtowo — tylko tam, gdzie realnie brakuje oceny Ani do zgłoszonego tematu.\n"
+    "   Nie wstawiaj [DO UZUPEŁNIENIA] wszędzie hurtowo — tylko tam, gdzie realnie brakuje oceny Ani do zgłoszonego tematu.\n\n"
+    "11. UŻYWAJ IMIENIA PACJENTA — nie 'kot', 'pies', 'pacjent'.\n"
+    "   Wszędzie, gdzie brzmi to naturalnie, pisz imię zwierzęcia ('Tobiasz chętnie zjada...', 'Kicia odmawia...').\n"
+    "   Określeń gatunkowych używaj tylko, gdy mowa o cechach gatunku w ogóle, nie o tym konkretnym zwierzęciu.\n"
+    "   ŹLE: 'Pacjent chętnie zjada kawałki surowego kurczaka'  ->  DOBRZE: 'Tobiasz chętnie zjada kawałki surowego kurczaka'\n"
 )
 
 # Pary "draft narzędzia -> poprawka Ani". DOKŁADAJ KOLEJNE, gdy Ania je przyśle.
@@ -193,6 +196,18 @@ PRZYKLADY_STYLU = [
     (
         "Kategorycznie nie: ziemniaki, cukinia ze skórką, zbyt czerwone gatunki mięsa.",
         "Kategorycznie nie:\n• (Prawdopodobnie) Ziemniaki – zwłaszcza po rozmrożeniu.\n• Cukinia podawana ze skórką lub nasionami.\n• (Prawdopodobnie) Zbyt czerwone i intensywne gatunki mięsa (np. wyrazista karkówka wieprzowa) – choć był moment, kiedy chętnie zjadła ją jako mięso surowe.\n(Ania oznacza niepewność słowem „(Prawdopodobnie)” i ZACHOWUJE sprzeczne obserwacje zamiast je wygładzać.)"
+    ),
+    (
+        "Pacjent chętnie zjada kawałki surowego kurczaka lub wątróbkę delikatnie podsmażoną na suchej patelni. Kot wykazuje ogólne dobre zainteresowanie surowym mięsem.",
+        "Tobiasz chętnie zjada kawałki surowego kurczaka lub wątróbkę delikatnie podsmażoną na suchej patelni. Wykazuje ogólne dobre zainteresowanie surowym mięsem. (Używaj imienia pacjenta zamiast 'pacjent'/'kot'/'pies'.)"
+    ),
+    (
+        "Komentarz do wywiadu: [DO UZUPEŁNIENIA]",
+        "Komentarz do wywiadu:\n- Tobiasz ma specyficzne potrzeby żywieniowe – musi spożywać mokrą karmę, ale nie jest do niej przekonany, przez co cały czas je karmę suchą.\n- Dla zdrowia jego dróg moczowych musimy przestawić go na dietę mokrą, a skoro już wykazuje zainteresowanie surowym mięsem, jesteśmy na dobrej drodze, żeby sprawnie przekonać go do diety BARF.\n(Ta sekcja to SYNTEZA wywiadu — streszczaj problemy Opiekuna i cele Ani wypowiedziane w materiałach. NIE zostawiaj jej pustej.)"
+    ),
+    (
+        "Dieta opiera się na suchej karmie Orijen Regional Red (podawane łącznie około 70 g dziennie). Próby wprowadzenia komercyjnych karm mokrych zakończyły się niepowodzeniem. Przed adopcją kot jadł głównie suchą karmę.",
+        "- Dieta opiera się na suchej karmie Orijen Regional Red (ok. 70 g dziennie, w 2-3 posiłkach).\n- Próby wprowadzenia komercyjnych karm mokrych zakończyły się niepowodzeniem.\n- Przed adopcją, w fundacji, Tobiasz również jadł głównie suchą karmę.\n(Sekcje z wieloma niezależnymi faktami formatuj jako listę punktów '- ' — tak pisze Ania.)"
     ),
 ]
 
@@ -259,8 +274,13 @@ ZNACZNIKI_UWAGI = {
 }
 
 
-def _dodaj_tekst_z_formatowaniem(p, tekst):
-    """Dodaje zwykły tekst do akapitu z obsługą pogrubień (**) i linków."""
+# Zapis linku w stylu markdown: [widoczna etykieta](https://adres) — renderowany
+# w Wordzie jako klikalny link ukryty pod etykietą (bez brzydkiego gołego URL-a).
+WZOR_MD_LINK = re.compile(r'\[([^\]]+)\]\((https?://[^\s)]+)\)')
+
+
+def _dodaj_zwykly_tekst(p, tekst):
+    """Dodaje zwykły tekst do akapitu z obsługą pogrubień (**) i surowych URL-i."""
     sub_segs = tekst.split('**')
     for idx, sub_seg in enumerate(sub_segs):
         if not sub_seg:
@@ -274,6 +294,24 @@ def _dodaj_tekst_z_formatowaniem(p, tekst):
                 run = p.add_run(u_seg)
                 if czy_pogrubiony:
                     run.bold = True
+
+
+def _dodaj_tekst_z_formatowaniem(p, tekst):
+    """Dodaje tekst do akapitu: najpierw linki markdown [etykieta](url),
+    potem pogrubienia (**) i surowe adresy jako fallback."""
+    czesci = WZOR_MD_LINK.split(tekst)
+    # split z 2 grupami daje sekwencję: [zwykły, etykieta, url, zwykły, etykieta, url, ...]
+    i = 0
+    while i < len(czesci):
+        if i % 3 == 0:
+            if czesci[i]:
+                _dodaj_zwykly_tekst(p, czesci[i])
+            i += 1
+        else:
+            etykieta = czesci[i].strip()
+            url = czesci[i + 1]
+            add_hyperlink(p, url, etykieta if etykieta else url)
+            i += 2
 
 
 def parsuj_i_formatuj_tekst(p, tekst):
@@ -562,7 +600,7 @@ with tab1:
                                 + "TWOJE ZADANIE TECHNICZNE:\n"
                                 "Stwórz jeden, spójny opis wizyty na podstawie trzech źródeł: ustnej transkrypcji, "
                                 "przesłanych dokumentów/zdjęć (załączników) oraz tekstów z plików Word. "
-                                "Stosuj powyższe siedem zasad stylu Ani w KAŻDYM zdaniu, które piszesz.\n\n"
+                                "Stosuj wszystkie powyższe zasady stylu Ani w KAŻDYM zdaniu, które piszesz.\n\n"
                                 "ZASADA INTELIGENTNEGO DOPASOWANIA (CROSS-ANALYSIS):\n"
                                 "1. Przeanalizuj treść każdego załącznika. Informacje w nich zawarte mogą dotyczyć DOWOLNEJ sekcji protokołu (notatki o wodzie, uwagi o smaczkach, dawki leków, opisy samopoczucia, wyniki badań).\n"
                                 "2. Przyporządkuj fakty tematycznie: informacje o diecie komercyjnej do 'Karmy komercyjne', informacje o dawkowaniu wody do 'Piciu/Jakiej wody używać', a opisy dolegliwości do 'Powód konsultacji' lub 'Kał/Biegunka/Wymioty'.\n"
@@ -576,20 +614,25 @@ with tab1:
                                 "- Jeśli chcesz coś wyróżnić, używaj podwójnych gwiazdek **tekst**.\n"
                                 "- Jeśli w źródłach brakuje danych dla danej sekcji, wstaw fragment [BRAK INFORMACJI].\n"
                                 "- Jeśli temat pojawił się w wywiadzie, ale brakuje oceny/zalecenia Ani — odnotuj sam fakt "
-                                "i wstaw [DO UZUPEŁNIENIA]. NIE wymyślaj zalecenia za Anię."
+                                "i wstaw [DO UZUPEŁNIENIA]. NIE wymyślaj zalecenia za Anię.\n"
+                                "- KAŻDY link wstawiaj w formacie [krótka etykieta](URL) — nigdy goły adres URL.\n"
+                                "- Sekcje zawierające kilka niezależnych faktów formatuj jako listę punktów zaczynających się od '- ' "
+                                "(tak pisze Ania), zamiast zbijać je w jeden akapit prozy."
                             )
                         )
                         
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione.\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na naszej stronie meatpoint.io lub Facebooku https://www.facebook.com/meatpoint.io\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione. Każdy link wstaw w formacie [Nazwa artykułu](URL).\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na [naszej stronie meatpoint.io](https://meatpoint.io) lub [na Facebooku](https://www.facebook.com/meatpoint.io)\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_INNE_SMACZKI_STALY}\n\n"
                             elif naglowek == "Wprowadzanie suplementów:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
+                            elif naglowek == "Komentarz do wywiadu:":
+                                instrukcja_szablonu += f"## {naglowek}\n- Napisz zwięzłą syntezę wywiadu w punktach '- ': (1) najważniejsze problemy i oczekiwania Opiekuna, (2) co Ania chce osiągnąć i dlaczego — WYŁĄCZNIE na podstawie tego, co padło w transkrypcji/notatkach.\n- To jest STRESZCZENIE materiałów, nie nowe porady — nie dodawaj zaleceń, których Ania nie wypowiedziała.\n- NIE zostawiaj tej sekcji pustej, jeśli wywiad zawiera jakiekolwiek problemy/cele. [DO UZUPEŁNIENIA] wstaw tylko w miejscu celów Ani, jeśli w materiałach ich nie wyraziła.\n"
                             elif naglowek == "Aktualne badania:":
                                 instrukcja_szablonu += f"## {naglowek}\n- Zapisz WYŁĄCZNIE to, co sama Ania powiedziała lub napisała o badaniach WŁASNYMI SŁOWAMI — w transkrypcji LUB w swoich notatkach (np. 'morfologia w normie', 'miedź wyraźny niedobór', 'kreatynina wzrosła', data badania). To są jej słowa i MASZ je wykorzystać.\n- 🚨 ZAKAZ samodzielnego odczytywania i przepisywania wartości liczbowych z surowych dokumentów laboratoryjnych (PDF, zdjęcia, tabele wyników). ZAKAZ własnej oceny czy interpretacji wyników.\n- Jeśli Ania nic o badaniach nie powiedziała ani nie napisała, wstaw [BRAK INFORMACJI].\n"
                             elif naglowek == "Badania kontrolne:":
@@ -613,7 +656,7 @@ with tab1:
                                         types.Part.from_bytes(data=bytes_data, mime_type=plik.type)
                                     )
                         
-                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link.\n\nTranskrypcja rozmowy:\n{transcript}\n"
+                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link. Każdy dołączany link wstaw w formacie [Tytuł artykułu](URL) — NIGDY nie wklejaj gołego adresu URL.\n\nTranskrypcja rozmowy:\n{transcript}\n"
                         
                         if teksty_z_docx:
                             prompt_glowny += f"\nDodatkowe dokumenty tekstowe przesłane w załącznikach Word:\n{teksty_z_docx}"
