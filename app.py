@@ -47,7 +47,7 @@ TEKST_INNE_SMACZKI_STALY = (
 TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
     "Proszę zacząć od:\n• Wody\n• Mięsa\n• Podrobów\n• tłuszczu\n• Tauryny\n"
     "Proszę przygotować dietę tylko z ich zawartością i na razie pominąć pozostałe suplementy.\n\n"
-    "Jak Kicia będzie się dobrze czuła, na następny tydzień proszę przygotować dietę z zawartością:\n"
+    "Jak {{IMIĘ PACJENTA}} będzie się dobrze czuć, na następny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Dodatkowo: \n\n"
     "Jak wszystko będzie w porządku za kolejny tydzień proszę przygotować dietę z zawartością:\n"
     "• Wody\n• Mięsa\n• Podrobów\n• Tłuszczu / żółtka\n• Tauryny\n• Wapnia/soli\n• Kwasów omega\n• Dodatkowo: \n\n"
@@ -208,6 +208,10 @@ PRZYKLADY_STYLU = [
     (
         "Dieta opiera się na suchej karmie Orijen Regional Red (podawane łącznie około 70 g dziennie). Próby wprowadzenia komercyjnych karm mokrych zakończyły się niepowodzeniem. Przed adopcją kot jadł głównie suchą karmę.",
         "- Dieta opiera się na suchej karmie Orijen Regional Red (ok. 70 g dziennie, w 2-3 posiłkach).\n- Próby wprowadzenia komercyjnych karm mokrych zakończyły się niepowodzeniem.\n- Przed adopcją, w fundacji, Tobiasz również jadł głównie suchą karmę.\n(Sekcje z wieloma niezależnymi faktami formatuj jako listę punktów '- ' — tak pisze Ania.)"
+    ),
+    (
+        "Pragnienie:\n- Pije wodę z fontanny.",
+        "Pragnienie:\nPije wodę z fontanny, bardzo dużo i chętnie.\n(JEDEN fakt = zwykłe zdanie prozą. NIGDY lista z jednym punktem.)"
     ),
 ]
 
@@ -616,8 +620,9 @@ with tab1:
                                 "- Jeśli temat pojawił się w wywiadzie, ale brakuje oceny/zalecenia Ani — odnotuj sam fakt "
                                 "i wstaw [DO UZUPEŁNIENIA]. NIE wymyślaj zalecenia za Anię.\n"
                                 "- KAŻDY link wstawiaj w formacie [krótka etykieta](URL) — nigdy goły adres URL.\n"
-                                "- Sekcje zawierające kilka niezależnych faktów formatuj jako listę punktów zaczynających się od '- ' "
-                                "(tak pisze Ania), zamiast zbijać je w jeden akapit prozy."
+                                "- Sekcje zawierające DWA LUB WIĘCEJ niezależnych faktów formatuj jako listę punktów '- ' "
+                                "(tak pisze Ania). Sekcję z JEDNYM faktem lub krótką, płynną myślą pisz zwykłą prozą — "
+                                "NIGDY nie rób listy z jednym punktem."
                             )
                         )
                         
@@ -630,7 +635,7 @@ with tab1:
                             elif naglowek == "Inne smaczki:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_INNE_SMACZKI_STALY}\n\n"
                             elif naglowek == "Wprowadzanie suplementów:":
-                                instrukcja_szablonu += f"## {naglowek}\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
+                                instrukcja_szablonu += f"## {naglowek}\n- Wstaw poniższy stały tekst, podmieniając {{{{IMIĘ PACJENTA}}}} na imię aktualnego pacjenta (resztę tekstu zostaw dokładnie bez zmian):\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
                             elif naglowek == "Komentarz do wywiadu:":
                                 instrukcja_szablonu += f"## {naglowek}\n- Napisz zwięzłą syntezę wywiadu w punktach '- ': (1) najważniejsze problemy i oczekiwania Opiekuna, (2) co Ania chce osiągnąć i dlaczego — WYŁĄCZNIE na podstawie tego, co padło w transkrypcji/notatkach.\n- To jest STRESZCZENIE materiałów, nie nowe porady — nie dodawaj zaleceń, których Ania nie wypowiedziała.\n- NIE zostawiaj tej sekcji pustej, jeśli wywiad zawiera jakiekolwiek problemy/cele. [DO UZUPEŁNIENIA] wstaw tylko w miejscu celów Ani, jeśli w materiałach ich nie wyraziła.\n"
                             elif naglowek == "Aktualne badania:":
@@ -656,7 +661,7 @@ with tab1:
                                         types.Part.from_bytes(data=bytes_data, mime_type=plik.type)
                                     )
                         
-                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link. Każdy dołączany link wstaw w formacie [Tytuł artykułu](URL) — NIGDY nie wklejaj gołego adresu URL.\n\nTranskrypcja rozmowy:\n{transcript}\n"
+                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nWAŻNE dla metryczki: jeśli dla pola nie padła dokładna wartość, ale padł OPIS (np. lekarz określił zwierzę jako 'dobra waga, dobra muskulatura'), wpisz ten opis z adnotacją źródła — np. 'MCS: Dobra muskulatura (wg opisu lekarza)', 'BCS: Z opisu Opiekunki ok 6/9'. Tak robi Ania. [BRAK INFORMACJI] wstaw TYLKO, gdy o danym polu nie powiedziano zupełnie nic.\n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowując ich identyczną wielkość liter i pisownię:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link. Każdy dołączany link wstaw w formacie [Tytuł artykułu](URL) — NIGDY nie wklejaj gołego adresu URL.\n\nTranskrypcja rozmowy:\n{transcript}\n"
                         
                         if teksty_z_docx:
                             prompt_glowny += f"\nDodatkowe dokumenty tekstowe przesłane w załącznikach Word:\n{teksty_z_docx}"
