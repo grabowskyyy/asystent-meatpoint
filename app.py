@@ -139,7 +139,16 @@ REGULY_STYLU_ANI = (
     "11. UŻYWAJ IMIENIA PACJENTA — nie 'kot', 'pies', 'pacjent'.\n"
     "   Wszędzie, gdzie brzmi to naturalnie, pisz imię zwierzęcia ('Tobiasz chętnie zjada...', 'Kicia odmawia...').\n"
     "   Określeń gatunkowych używaj tylko, gdy mowa o cechach gatunku w ogóle, nie o tym konkretnym zwierzęciu.\n"
-    "   ŹLE: 'Pacjent chętnie zjada kawałki surowego kurczaka'  ->  DOBRZE: 'Tobiasz chętnie zjada kawałki surowego kurczaka'\n"
+    "   ŹLE: 'Pacjent chętnie zjada kawałki surowego kurczaka'  ->  DOBRZE: 'Tobiasz chętnie zjada kawałki surowego kurczaka'\n\n"
+    "12. ZERO META-OBIETNIC O TYM DOKUMENCIE — ten opis JEST finalnym dokumentem.\n"
+    "   ZAKAZ zdań w stylu 'zostanie podana wartość', 'zostanie wyliczona', 'zostanie uzupełnione', 'Ania sformułuje' — "
+    "one obiecują coś, co miało być TUTAJ.\n"
+    "   Gdy w zdaniu potrzebna jest konkretna wartość (ml, g, kcal, dawka, liczba), której NIE MA w materiałach: "
+    "napisz PEŁNE zdanie, wstawiając pogrubione **X** w miejscu wartości — Ania podmieni X na liczbę.\n"
+    "   ŹLE: 'Zostanie podana konkretna wartość mililitrów wody do dolewania.'\n"
+    "   DOBRZE: 'Proszę dolewać **X ml** wody dziennie bezpośrednio do diety mięsnej.'\n"
+    "   Wyjątek: jeśli Ania sama zapowiedziała w materiałach, że wartość poda w PRZEPISIE ('wyliczę w diecie') — zapisz to jej słowami.\n"
+    "   Znaczniki [BRAK INFORMACJI] i [DO UZUPEŁNIENIA] stawiaj SAME, bez dopisków narracyjnych typu '(Ania sformułuje ostateczne cele)'.\n"
 )
 
 # Pary "draft narzędzia -> poprawka Ani". DOKŁADAJ KOLEJNE, gdy Ania je przyśle.
@@ -213,6 +222,14 @@ PRZYKLADY_STYLU = [
         "Pragnienie:\n- Pije wodę z fontanny.",
         "Pragnienie:\nPije wodę z fontanny, bardzo dużo i chętnie.\n(JEDEN fakt = zwykłe zdanie prozą. NIGDY lista z jednym punktem.)"
     ),
+    (
+        "Badania należy dokładnie sprawdzić zgodnie z przesłanymi materiałami dodatkowymi, ponieważ zależy nam na porównaniu badań krwi z 2025 i 2026 roku i zaznaczeniu takich cech jak morfologia oraz parametry nerkowe i wątrobowe.",
+        "Morfologia: 2025 – **X**; 2026 – **X**. Parametry wątrobowe (ALT, ALP, GGT): 2025 – **X**; 2026 – **X**. Parametry nerkowe (kreatynina, mocznik): 2025 – **X**; 2026 – **X**.\n(Polecenie Ani WYKONUJESZ — jeśli kazała czytać wartości z plików, wpisujesz je z dopiskiem '(do weryfikacji)'. NIGDY nie przepisujesz treści polecenia jako zdania do dokumentu.)"
+    ),
+    (
+        "Piciu: Zostanie podana konkretna wartość mililitrów wody do dolewania bezpośrednio w samej diecie mięsnej.",
+        "Piciu: Proszę dolewać **X ml** wody dziennie bezpośrednio do diety mięsnej.\n(Brakująca wartość = pełne zdanie z pogrubionym X do podmiany przez Anię, NIE obietnica, że 'zostanie podana'.)"
+    ),
 ]
 
 
@@ -270,17 +287,17 @@ def add_hyperlink(p, url, text):
     nr.append(rPr); tn = OxmlElement('w:t'); tn.text = text; nr.append(tn); hl.append(nr); p._p.append(hl)
     return hl
 
+
+# Zapis linku w stylu markdown: [widoczna etykieta](https://adres) — renderowany
+# w Wordzie jako klikalny link ukryty pod etykietą (bez brzydkiego gołego URL-a).
+WZOR_MD_LINK = re.compile(r'\[([^\]]+)\]\((https?://[^\s)]+)\)')
+
 # Znaczniki wymagające uwagi Ani — renderowane kolorem i pogrubieniem w Wordzie,
 # żeby były nie do przeoczenia przy przeglądaniu dokumentu.
 ZNACZNIKI_UWAGI = {
     '[BRAK INFORMACJI]': RGBColor(220, 38, 38),    # czerwony  — nikt o tym nie mówił
     '[DO UZUPEŁNIENIA]': RGBColor(217, 119, 6),    # pomarańczowy — czeka na ocenę Ani
 }
-
-
-# Zapis linku w stylu markdown: [widoczna etykieta](https://adres) — renderowany
-# w Wordzie jako klikalny link ukryty pod etykietą (bez brzydkiego gołego URL-a).
-WZOR_MD_LINK = re.compile(r'\[([^\]]+)\]\((https?://[^\s)]+)\)')
 
 
 def _dodaj_zwykly_tekst(p, tekst):
@@ -330,6 +347,7 @@ def parsuj_i_formatuj_tekst(p, tekst):
             ra.font.color.rgb = ZNACZNIKI_UWAGI[seg]
         else:
             _dodaj_tekst_z_formatowaniem(p, seg)
+
 
 def konwertuj_do_docx(tekst_md):
     doc = Document()
@@ -460,7 +478,7 @@ def czytelny_blad(e, kontekst=""):
     if kod in (400, 401, 403) or "api key" in tekst or "permission" in tekst or "unauthenticated" in tekst:
         return (
             "🔑 **Problem z kluczem API.**\n\n"
-            "**Co zrobić:** sprawdź, czy klucz w panelu bocznym jest poprawny i aktywny "
+            "**Co zrobić:** sprawdź, czy klucz w panelu bocznym jest wklejony poprawnie i aktywny "
             "oraz czy na koncie Google AI Studio jest włączone rozliczanie (płatny plan)."
         )
 
@@ -582,6 +600,17 @@ with tab1:
         )
         if zalaczniki:
             st.success(f"📎 Pomyślnie załadowano załączniki kontekstowe: {len(zalaczniki)} szt.")
+
+        polecenia_ai = st.text_area(
+            "🧭 Polecenia dla AI (opcjonalnie):",
+            height=100,
+            key="polecenia_dla_ai",
+            placeholder="Np.: przeanalizuj wyniki z 2025 i 2026 z załączników i podsumuj w punktach morfologię oraz parametry wątrobowe i nerkowe"
+        )
+        st.caption(
+            "💡 Transkrypcja i załączniki to **materiał do zreferowania**. To pole to **rozkazy do wykonania** — "
+            "AI je wykona (nie przepisze ich do dokumentu) i w ich zakresie może np. przeanalizować wyniki z załączników."
+        )
         
     with col2:
         st.subheader("📋 Opis wizyty")
@@ -665,6 +694,21 @@ with tab1:
                         
                         if teksty_z_docx:
                             prompt_glowny += f"\nDodatkowe dokumenty tekstowe przesłane w załącznikach Word:\n{teksty_z_docx}"
+
+                        polecenia_txt = (polecenia_ai or "").strip()
+                        if polecenia_txt:
+                            blok_polecen = (
+                                "🚨🚨 POLECENIA SPECJALNE OD ANI — DO WYKONANIA (NAJWYŻSZY PRIORYTET):\n"
+                                f"{polecenia_txt}\n\n"
+                                "ZASADY WYKONYWANIA POLECEŃ:\n"
+                                "- Powyższe polecenia pochodzą bezpośrednio od Ani i są jej świadomą, pisemną decyzją.\n"
+                                "- WYKONAJ je w odpowiednich sekcjach dokumentu. NIGDY nie przepisuj ich treści do dokumentu "
+                                "i nie relacjonuj ('należy sprawdzić...', 'zależy nam na...') — to są rozkazy, nie materiał do zreferowania.\n"
+                                "- W zakresie, którego dotyczą, polecenia mają PIERWSZEŃSTWO przed domyślnymi zakazami. "
+                                "Przykład: jeśli Ania każe przeanalizować lub podsumować wyniki badań z załączonych plików — zrób to.\n"
+                                "- Każdą wartość liczbową odczytaną z załączonych plików na polecenie Ani oznacz dopiskiem '(do weryfikacji)'.\n\n"
+                            )
+                            prompt_glowny = blok_polecen + prompt_glowny
                         
                         pakiety_danych_dla_ai.append(prompt_glowny)
                         
