@@ -24,6 +24,9 @@ STRUKTURA_PROTOKOLU = [
     "Badania kontrolne:", "Załączniki:"
 ]
 
+# Baza artykułów edukacyjnych (Arkusz Google) — kolumny: Nazwa | URL | Opis dla AI
+LINK_DO_ARKUSZA = "https://docs.google.com/spreadsheets/d/1qgSX_t4_fb36CqtFUluPDKDQILpR9_SLOlYBPTXSTes/edit?usp=sharing"
+
 # Stałe bloki edukacyjne z właściwymi, działającymi linkami MeatPoint
 TEKST_TYNDALIZACJA_STALY = (
     "Jeżeli robią Państwo dietę na dłużej niż 5-6 dni (mowa o diecie surowej) i chcą Państwo "
@@ -567,7 +570,9 @@ def czytelny_blad(e, kontekst=""):
 
 @st.cache_data(ttl=3600)
 def pobierz_baze_artykulow(url):
-    """Pobiera bazę artykułów z Arkusza Google (cache 1h) i waliduje kolumny."""
+    """Pobiera bazę artykułów z Arkusza Google (cache 1h) i waliduje kolumny.
+    Odfiltrowuje puste i szablonowe wiersze (np. '[URL]' bez nazwy), żeby do promptu
+    nie trafiały śmieci typu 'Link: [URL] | Tytuł: nan'."""
     csv_url = url.replace('/edit?usp=sharing', '/export?format=csv')
     df = pd.read_csv(csv_url)
     brakujace = {'URL', 'Nazwa', 'Opis dla AI'} - set(df.columns)
@@ -576,7 +581,10 @@ def pobierz_baze_artykulow(url):
             f"Arkusz Google nie zawiera wymaganych kolumn: {brakujace}. "
             f"Sprawdź nagłówki (dokładna pisownia: 'URL', 'Nazwa', 'Opis dla AI')."
         )
-    return df
+    df = df.dropna(subset=['URL', 'Nazwa'])
+    df = df[df['URL'].astype(str).str.strip().str.startswith('http')]
+    df['Opis dla AI'] = df['Opis dla AI'].fillna('')
+    return df.reset_index(drop=True)
 
 
 def przetworz_jedno_nagranie(args):
@@ -644,6 +652,17 @@ with st.sidebar:
             except Exception as e:
                 st.caption(f"Nie udało się pobrać listy: {e}")
 
+    with st.expander("📚 Baza artykułów z Arkusza (co widzi AI)"):
+        if st.button("🔄 Odśwież bazę", help="Wymusza ponowne pobranie arkusza (normalnie odświeża się co godzinę)"):
+            pobierz_baze_artykulow.clear()
+            st.rerun()
+        try:
+            df_podglad = pobierz_baze_artykulow(LINK_DO_ARKUSZA)
+            st.caption(f"AI widzi {len(df_podglad)} artykuł(ów). Puste i szablonowe wiersze są pomijane.")
+            st.dataframe(df_podglad[['Nazwa', 'URL', 'Opis dla AI']], hide_index=True, use_container_width=True)
+        except Exception as e:
+            st.caption(czytelny_blad(e))
+
     st.markdown("---")
     st.info(
         "🔒 **Bezpieczeństwo danych pacjenta:**\n\n"
@@ -689,7 +708,6 @@ with tab1:
         
     with col2:
         st.subheader("📋 Opis wizyty")
-        LINK_DO_ARKUSZA = "https://docs.google.com/spreadsheets/d/1qgSX_t4_fb36CqtFUluPDKDQILpR9_SLOlYBPTXSTes/edit?usp=sharing"
         
         if st.button("🚀 Wygeneruj i uzupełnij opisy wizyty w Word", type="primary", use_container_width=True):
             if not api_key or not transcript: 
