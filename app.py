@@ -18,7 +18,7 @@ STRUKTURA_PROTOKOLU = [
     "### Kategorycznie tak:", "### Kategorycznie nie:", "### Kluczowa uwaga dot. przechowywania:",
     "Kał / Biegunka / Wymioty:", "Mocz:", "Odrobaczanie:", "Aktualne badania:", "Aktualne leki:",
     "Komentarz do wywiadu:", "Główne założenia diety:", "Co się zmieni na diecie BARF/BACF:",
-    "Plan dietetyczny:", "Tranzycja i przechowywanie:", "Kaloryczność:", "Piciu:",
+    "Plan dietetyczny:", "Tranzycja i przechowywanie:", "Piciu:",
     "### Jakiej wody używać?", "Suplementy dodatkowe:", "Wiązanie fosforu:", "Smaczki:",
     "Inne smaczki:", "Karmy komercyjne:", "Tyndalizacja:", "Wprowadzanie suplementów:",
     "Badania kontrolne:", "Załączniki:"
@@ -74,11 +74,11 @@ TEKST_WPROWADZANIE_SUPLEMENTOW_STALY = (
 
 TEKST_PICIU_SZABLON = (
     "Dzienne zapotrzebowanie {{IMIĘ PACJENTA}} to ok. **X ml** czystej wody (uwzględniając obecną aktywność i kaloryczność pokarmu).\n\n"
-    "Z karmy BARF {{IMIĘ PACJENTA}} będzie {{dostawał/dostawała}} ok. **X ml** wody dziennie, jak już będzie {{zjadał/zjadała}} całą dzienną porcję.\n\n"
+    "Z karmy {{BARF/BACF}} {{IMIĘ PACJENTA}} będzie {{dostawał/dostawała}} ok. **X ml** wody dziennie, jak już będzie {{zjadał/zjadała}} całą dzienną porcję.\n\n"
     "Dodatkowo {{powinien/powinna}} wypijać ok. **X ml** na dzień.\n\n"
     "Jak to zrobić, by {{IMIĘ PACJENTA}} {{dopijał/dopijała}} więcej wody?\n"
-    "- Dolewając ok. **X ml** wody dodatkowo do każdego posiłku (jeśli mamy 3 posiłki).\n"
-    "- Lub zwiększając ilość wody do diety BARF (można zastosować więcej wody niż podano w przepisie, wymieszać ją dokładnie z mieszanką i mieszankę wstawić do lodówki na ok. 2 godziny — mięso wchłonie wtedy znaczną część wody i nie będzie „zupki”).\n"
+    "- Dolewając ok. **X ml** wody dodatkowo do każdego posiłku (jeśli mamy {{LICZBA POSIŁKÓW}} posiłki).\n"
+    "- Lub zwiększając ilość wody do diety {{BARF/BACF}} (można zastosować więcej wody niż podano w przepisie, wymieszać ją dokładnie z mieszanką i mieszankę wstawić do lodówki na ok. 2 godziny — mięso wchłonie wtedy znaczną część wody i nie będzie „zupki”).\n"
     "- Można dodatkowo rozstawić w domu kubeczki/miseczki/sztuczne kryształy, które będą dla {{IMIĘ PACJENTA}} atrakcyjne (np. będą odbijać światło i {{IMIĘ PACJENTA}} będzie się tą wodą bawić). Jeśli lubi pić z fontanny lub z kapiącego kranu, też można tak zachęcać.\n\n"
     "W okresie tranzycji proszę dolewać tyle wody, ile zwykle {{IMIĘ PACJENTA}} {{akceptował/akceptowała}}. Zależy nam na razie na płynnym zaakceptowaniu zmiany diety — potem będzie można zwiększać jej ilość."
 )
@@ -92,17 +92,19 @@ TEKST_SMACZKI_SZABLON = (
     "[AKAPIT TYLKO PRZY NADWADZE / WADZE GRANICZNEJ — w przeciwnym razie POMIŃ:] "
     "Z uwagi na {{nadwagę / wagę graniczną}} ilość kalorii z dziennej porcji {{IMIĘ PACJENTA}} ze smaczków musi wynosić maksymalnie do **X kcal/dzień**. "
     "Wtedy nie trzeba zmniejszać mieszanki, a waga {{IMIĘ PACJENTA}} powinna delikatnie spadać.\n\n"
-    "W smaczkach nie powinna znajdować się:\n"
-    "- gliceryna, glikol, produkty uboczne pochodzenia zwierzęcego i roślinnego, sorbitol (dopuszczalny ewentualnie w pastach do zębów)\n\n"
+    "[AKAPIT TYLKO PRZY DIECIE ELIMINACYJNEJ / MONOBIAŁKOWEJ — w przeciwnym razie POMIŃ:] "
+    "Kluczowe jest dostosowanie smaczków do diety eliminacyjnej, czyli do diety {{BARF/BACF}} {{BIAŁKO}} podajemy TYLKO smaczki {{BIAŁKO — przymiotnik, np. wieprzowe}}. "
+    "Nowe smaczki wprowadzimy razem z nowym białkiem. Nie mieszamy smaków, dopóki nie znajdziemy bezpiecznych białek.\n\n"
+    "W smaczkach komercyjnych nie powinna znajdować się:\n"
+    "- gliceryna, glikol, syrop glukozowy, cukier, produkty uboczne pochodzenia zwierzęcego i roślinnego, sorbitol (dopuszczalny ewentualnie w pastach do zębów)\n"
+    "- smaczki mogą być „dla psów” lub „dla kotów” – to nie ma znaczenia, liczy się czysty i prosty skład\n\n"
     "Przykładowe smaczki komercyjne:\n"
-    "[NAJPIERW smaczki, które Opiekun stosuje obecnie (z materiałów) — każdy w osobnym punkcie; przy nadwadze dopisz dawkę:]\n"
+    "[NAJPIERW smaczki, które Opiekun stosuje obecnie (z materiałów), jeśli pasują do diety — każdy w osobnym punkcie; przy nadwadze dopisz dawkę:]\n"
     "- {{NAZWA SMACZKA Z MATERIAŁÓW}} – dawka na dzień do **X g** (**X kcal**/100 g produktu)\n"
-    "[POTEM stała lista:]\n"
-    "- MAC's Dog Mono Snack (konina, kaczka, królik)\n"
-    "- Micha pupila Treserki z Wieprzowiny\n"
-    "- Kiwi Walker Snacks (100% mięsa)\n"
-    "- Syta micha mini płucka (100%), Syta micha Freezy (różne smaki, 100%)\n"
-    "- Każde inne liofilizowane smaczki 100% np. LioPEPE, AYLA\n"
+    "[POTEM 5–7 pozycji DOBRANYCH z poniższej puli: tylko smaczki 100% mięsne / liofilizowane; przy diecie eliminacyjnej WYŁĄCZNIE z białkiem diety (np. BACF wieprzowy -> tylko wieprzowe); nie wypisuj całej puli:]\n"
+    "PULA: Kiwi Walker 100% liofilizowane (różne mięsa) | Lio PEPE 100% liofilizowane (np. Pork) | AYLA liofilizowane | Cosma Snackies 100% liofilizowane | "
+    "John Dog Freeze Dried | catz finefood Meatz | Syta Micha 100% Liofilizowane Mięso, Syta micha mini płucka, Syta micha Freezy | "
+    "MAC's Dog Mono Snack (konina, kaczka, królik) | Micha pupila Treserki z Wieprzowiny\n"
     "- Domowe suszone smaczki"
 )
 
@@ -119,7 +121,7 @@ TEKST_KARMY_KOMERCYJNE_SZABLON = (
 )
 
 TEKST_KALORYCZNOSC_SZABLON = (
-    "Kaloryczność diety ustawiona na poziomie ok. **X kcal/dzień** (**X kg** wagi; cel: {{utrzymanie masy ciała / redukcja / przyrost — wg materiałów}}). "
+    "diety ustawiona na poziomie ok. **X kcal/dzień** (**X kg** wagi; cel: {{utrzymanie masy ciała / redukcja / przyrost — wg materiałów}}). "
     "Kaloryczność jest wartością wyjściową – w przypadku wahań wagi lub uczucia głodu możliwa jest jej jednorazowa korekta w ramach konsultacji (do miesiąca od wizyty)."
 )
 
@@ -336,7 +338,9 @@ def _norm_naglowek(s):
 def segmentuj_docx(file_bytes):
     doc = Document(BytesIO(file_bytes))
     # Mapa: znormalizowana etykieta -> oryginalny klucz z STRUKTURA_PROTOKOLU
-    naglowki = {_norm_naglowek(n): n for n in STRUKTURA_PROTOKOLU}
+    # (+ nagłówki archiwalne — sekcje usunięte ze struktury, ale obecne w starszych dokumentach)
+    NAGLOWKI_ARCHIWALNE = ["Kaloryczność:"]
+    naglowki = {_norm_naglowek(n): n for n in STRUKTURA_PROTOKOLU + NAGLOWKI_ARCHIWALNE}
     sekcje = {}
     biezaca = "Nagłówek i Metryczka"
     sekcje[biezaca] = []
@@ -751,25 +755,25 @@ with tab1:
                         instrukcja_szablonu = ""
                         for naglowek in STRUKTURA_PROTOKOLU:
                             if naglowek == "Załączniki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione. Każdy link wstaw w formacie [Nazwa artykułu](URL).\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na [naszej stronie meatpoint.io](https://meatpoint.io) lub [na Facebooku](https://www.facebook.com/meatpoint.io)\n\nPozdrawiam serdecznie,\nAnna Michalska"
+                                instrukcja_szablonu += f"## {naglowek}\n- Najpierw wypisz w punktach '- ' listę plików, które Ania dołącza do opisu (stały zestaw; dopasuj nazwę przepisu do diety z planu, wartości, których nie ma w materiałach, zostaw jako pogrubione X):\n- Dieta {{{{BARF/BACF}}}} {{{{mono / rodzaj}}}} {{{{białko}}}} (**X** dni i **X** dni)\n- BARFNA KUCHNIA ebook\n- Tranzycja – przewodnik\n- Jak przygotowywać dietę gotowaną w domu – plik   [TYLKO gdy dieta jest gotowana (BACF); przy BARF pomiń]\n- BARF podstawy – plik\n- Pod listą plików dołącz wyłącznie pasujące linki z bazy, jeśli ich warunki kliniczne zostały spełnione. Każdy link wstaw w formacie [Nazwa artykułu](URL).\n- Pod nimi dodaj dokładnie te słowa:\nW razie pytań dotyczących tego opisu, jestem do Państwa dyspozycji.\nZachęcamy również do poszerzenia wiedzy o diecie na [naszej stronie meatpoint.io](https://meatpoint.io) lub [na Facebooku](https://www.facebook.com/meatpoint.io)\n\nPozdrawiam serdecznie,\nAnna Michalska"
                             elif naglowek == "Tyndalizacja:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_TYNDALIZACJA_STALY}\n\n"
                             elif naglowek == "Inne smaczki:":
                                 instrukcja_szablonu += f"## {naglowek}\n{TEKST_INNE_SMACZKI_STALY}\n- Pod powyższym tekstem dodaj zdanie: 'Smaczki można też samodzielnie przygotowywać w domu na dłuższy czas – tutaj [nasz artykuł, jak takie smaczki zrobić bezpiecznie w domu](URL).' Jeśli w bazie z Arkusza jest artykuł o domowych smaczkach — użyj jego URL; jeśli nie ma — zamiast linku zakończ zdanie znacznikiem [DO UZUPEŁNIENIA].\n\n"
                             elif naglowek == "Smaczki:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Użyj DOKŁADNIE poniższego szablonu Ani. Podmień placeholdery (imię, formy wg płci). Akapit oznaczony [TYLKO PRZY NADWADZE] wstaw wyłącznie, gdy z materiałów wynika nadwaga / waga graniczna — inaczej go pomiń. Dawki przy smaczkach dopisuj tylko przy nadwadze. Wartości podane przez Anię wstaw zamiast X. Nie kopiuj do dokumentu instrukcji w nawiasach kwadratowych.\n{TEKST_SMACZKI_SZABLON}\n\n"
+                                instrukcja_szablonu += f"## {naglowek}\n- Użyj DOKŁADNIE poniższego szablonu Ani. Podmień placeholdery (imię, formy wg płci). Akapit [TYLKO PRZY NADWADZE] wstaw wyłącznie, gdy z materiałów wynika nadwaga / waga graniczna. Akapit [TYLKO PRZY DIECIE ELIMINACYJNEJ] wstaw wyłącznie, gdy dieta jest monobiałkowa/eliminacyjna (podstaw białko diety). Inaczej te akapity pomiń.\n- Przykładowe smaczki DOBIERZ z puli (nie kopiuj całej): pasujące do gatunku, a przy diecie eliminacyjnej wyłącznie z białkiem diety. Dawki przy smaczkach dopisuj tylko przy nadwadze. Wartości podane przez Anię wstaw zamiast X. Nie kopiuj do dokumentu instrukcji w nawiasach kwadratowych ani słowa 'PULA:'.\n{TEKST_SMACZKI_SZABLON}\n\n"
                             elif naglowek == "Karmy komercyjne:":
                                 instrukcja_szablonu += f"## {naglowek}\n- SEKCJA WARUNKOWA: jeśli z materiałów NIE wynika, że Opiekun chce nadal stosować karmy komercyjne (w całości lub jako uzupełnienie) — POMIŃ tę sekcję CAŁKOWICIE, łącznie z nagłówkiem. Nie wstawiaj znacznika, nie pisz 'nie dotyczy'.\n- Jeśli Opiekun chce karm komercyjnych — użyj DOKŁADNIE poniższego szablonu Ani i wypisz karmy wymienione/zaakceptowane w materiałach (wartości kcal i dawki podane przez Anię zamiast X):\n{TEKST_KARMY_KOMERCYJNE_SZABLON}\n\n"
                             elif naglowek == "Piciu:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Użyj DOKŁADNIE poniższego szablonu Ani: podmień imię (odmieniaj), wybierz formy wg płci, a wartości podane przez Anię w materiałach wstaw zamiast X (jeśli nie padły — zostaw pogrubione X). Jeśli w materiałach są dodatkowe, indywidualne uwagi o piciu (np. fontanna, kroplówki) — dopisz je na początku sekcji jej słowami.\n{TEKST_PICIU_SZABLON}\n\n"
+                                instrukcja_szablonu += f"## {naglowek}\n- Użyj DOKŁADNIE poniższego szablonu Ani: podmień imię (odmieniaj), wybierz formy wg płci, a wartości podane przez Anię w materiałach wstaw zamiast X (jeśli nie padły — zostaw pogrubione X). {{{{BARF/BACF}}}} podstaw wg typu diety z planu (surowa = BARF, gotowana = BACF). {{{{LICZBA POSIŁKÓW}}}} podstaw liczbą posiłków dziennie ustaloną w materiałach (jeśli nie padła — wpisz 3). Jeśli w materiałach są dodatkowe, indywidualne uwagi o piciu (np. fontanna, kroplówki) — dopisz je na początku sekcji jej słowami.\n{TEKST_PICIU_SZABLON}\n\n"
                             elif naglowek == "### Jakiej wody używać?":
                                 instrukcja_szablonu += f"{naglowek}\n{TEKST_JAKIEJ_WODY_STALY}\n- Jeśli Ania podała w materiałach konkretne marki lub dodatkowe uwagi o wodzie — dopisz je po tym zdaniu.\n\n"
-                            elif naglowek == "Kaloryczność:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Użyj poniższego szkieletu Ani. Wartości podane przez nią w materiałach (kcal, kg, cel) wstaw zamiast X; jeśli nie padły — zostaw pogrubione X. Jeśli Ania podała dodatkowe ustalenia (np. podział kcal dieta/smaczki) — dopisz je jej słowami. ZAKAZ zdań typu 'zostanie wyliczona'.\n{TEKST_KALORYCZNOSC_SZABLON}\n\n"
+                            elif naglowek == "Plan dietetyczny:":
+                                instrukcja_szablonu += f"## {naglowek}\n- Wypisz w punktach '- ' ustalenia planu z materiałów (rodzaj diety BARF/BACF, mięsa/białko, forma, warianty, zamienniki, dzienniczek itp.) — słowami Ani.\n- JAKO JEDEN Z PUNKTÓW (najlepiej przedostatni) wstaw szkielet kaloryczności Ani — wartości z materiałów zamiast X, jeśli nie padły, zostaw pogrubione X. ZAKAZ zdań typu 'zostanie wyliczona':\n- **Kaloryczność** {TEKST_KALORYCZNOSC_SZABLON}\n- Jeśli Ania podała dodatkowe ustalenia o kaloryczności (np. podział kcal dieta/smaczki) — dopisz je w tym samym punkcie jej słowami.\n"
                             elif naglowek == "Suplementy dodatkowe:":
                                 instrukcja_szablonu += f"## {naglowek}\n- To miejsce WYŁĄCZNIE na suplementy DODATKOWE — ponad standardowy zestaw BARF/BACF. Standardowe (NIE wypisuj ich tutaj): {STANDARDOWE_SUPLEMENTY_BARF}.\n- Wyłap z notatek / INFO draftu Ani i z transkrypcji każdy PLANOWANY suplement spoza tego zestawu (np. koenzym Q10/ubichinol, NAC, astaksantyna, L-glutamina, L-karnityna, cordyceps, probiotyki/prebiotyki, beta-glukany, magnez, miedź, ostropest/karczoch, chitosan, arginina, kwercetyna, glukozamina/chondroityna, omułek, kolagen) i WYMIEŃ je w punktach '- ' — sama nazwa (+ preparat, jeśli padł), po każdej [DO UZUPEŁNIENIA].\n- BEZ dawek i BEZ opisów działania — to Ania uzupełnia ręcznie. Chodzi o to, żeby żadnego nie pominąć.\n- Jeśli w materiałach nie ma planowanych suplementów dodatkowych, wstaw [DO UZUPEŁNIENIA].\n"
                             elif naglowek == "Wprowadzanie suplementów:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Wstaw poniższy stały tekst, podmieniając {{{{IMIĘ PACJENTA}}}} na imię aktualnego pacjenta (resztę tekstu zostaw dokładnie bez zmian):\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
+                                instrukcja_szablonu += f"## {naglowek}\n- Wstaw poniższy stały tekst z trzema dopasowaniami: (1) podmień {{{{IMIĘ PACJENTA}}}} na imię pacjenta; (2) jeśli dieta z planu zawiera warzywa/dynię — w KAŻDYM kroku dopisz punkt '• Warzyw' po punkcie o tłuszczu; (3) w każdym wierszu '• Dodatkowo: ' wpisz nazwy suplementów dodatkowych z sekcji 'Suplementy dodatkowe' (bez dawek), a jeśli ich nie ma — zostaw 'Dodatkowo: ' puste. Resztę tekstu zostaw dokładnie bez zmian:\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
                             elif naglowek == "Komentarz do wywiadu:":
                                 instrukcja_szablonu += f"## {naglowek}\n- Napisz zwięzłą syntezę wywiadu w punktach '- ': (1) najważniejsze problemy i oczekiwania Opiekuna, (2) co Ania chce osiągnąć i dlaczego — WYŁĄCZNIE na podstawie tego, co padło w transkrypcji/notatkach.\n- To jest STRESZCZENIE materiałów, nie nowe porady — nie dodawaj zaleceń, których Ania nie wypowiedziała.\n- NIE zostawiaj tej sekcji pustej, jeśli wywiad zawiera jakiekolwiek problemy/cele. [DO UZUPEŁNIENIA] wstaw tylko w miejscu celów Ani, jeśli w materiałach ich nie wyraziła.\n"
                             elif naglowek == "Aktualne badania:":
@@ -795,7 +799,7 @@ with tab1:
                                         types.Part.from_bytes(data=bytes_data, mime_type=plik.type)
                                     )
                         
-                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nWAŻNE dla metryczki: jeśli dla pola nie padła dokładna wartość, ale padł OPIS (np. lekarz określił zwierzę jako 'dobra waga, dobra muskulatura'), wpisz ten opis z adnotacją źródła — np. 'MCS: Dobra muskulatura (wg opisu lekarza)', 'BCS: Z opisu Opiekunki ok 6/9'. Tak robi Ania. [BRAK INFORMACJI] wstaw TYLKO, gdy o danym polu nie powiedziano zupełnie nic.\n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowając ich identyczną wielkość liter i pisownię (JEDYNY WYJĄTEK: sekcję 'Karmy komercyjne:' pomiń całkowicie, łącznie z nagłówkiem, jeśli Opiekun nie planuje stosowania karm komercyjnych — szczegóły przy tej sekcji). Placeholdery w podwójnych klamrach {{...}} z szablonów ZAWSZE zamieniaj na właściwe słowa; instrukcji w nawiasach kwadratowych [...] nie kopiuj do dokumentu:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link. Każdy dołączany link wstaw w formacie [Tytuł artykułu](URL) — NIGDY nie wklejaj gołego adresu URL.\n\nTranskrypcja rozmowy:\n{transcript}\n"
+                        prompt_glowny = f"Przeanalizuj podaną transkrypcję wizyty oraz wszystkie dołączone pliki kontekstowe.\n\nWygeneruj dokument według tej rygorystycznej kolejności:\n\nKROK 1: Na samej górze stwórz wyrównaną DO LEWEJ linię: 'Data wizyty: DD.MM.YYYY' (wyciągnij datę z rozmowy/plików lub wstaw [BRAK INFORMACJI])\n\nKROK 2: Bezpośrednio POD DATĄ wypisz linie metryczki podstawowej (ZAKAZ używania znaków '##' na ich początku, po dwukropku ma być dokładnie jedna spacja. Dane wyciągaj z transkrypcji oraz załączników):\nDane Opiekuna: \nPacjent: \nGatunek: \nRasa: \nWiek: \nWaga: \nBCS: \nMCS: \nIlość zwierząt w domu: \nSterylizacja/kastracja: \n\nWAŻNE dla metryczki: jeśli dla pola nie padła dokładna wartość, ale padł OPIS (np. lekarz określił zwierzę jako 'dobra waga, dobra muskulatura'), wpisz ten opis z adnotacją źródła — np. 'MCS: Dobra muskulatura (wg opisu lekarza)', 'BCS: Z opisu Opiekunki ok 6/9'. Tak robi Ania. [BRAK INFORMACJI] wstaw TYLKO, gdy o danym polu nie powiedziano zupełnie nic. NIE wpisuj pół-faktów ani własnych dopisków zamiast znacznika (ŹLE: 'Samiec (brak informacji o kastracji)' — DOBRZE: '[BRAK INFORMACJI]'; płeć wykorzystaj do form gramatycznych, nie wpisuj jej w pole sterylizacji).\n\nKROK 3: Pod metryczką umieść poniższe nagłówki i uzupełnij je danymi z transkrypcji oraz plików, zachowając ich identyczną wielkość liter i pisownię (JEDYNY WYJĄTEK: sekcję 'Karmy komercyjne:' pomiń całkowicie, łącznie z nagłówkiem, jeśli Opiekun nie planuje stosowania karm komercyjnych — szczegóły przy tej sekcji). Placeholdery w podwójnych klamrach {{...}} z szablonów ZAWSZE zamieniaj na właściwe słowa; instrukcji w nawiasach kwadratowych [...] nie kopiuj do dokumentu:\n{instrukcja_szablonu}\n\n🚨 DEDYKOWANE DOPASOWANIE LINKÓW Z ARKUSZA:\nOto dostępna baza załączników zewnętrznych:\n{l_p}\n\nPrzeanalizuj pole 'Kiedy dołączyć (Wskazanie)'. Dołącz dany adres URL do dokumentu TYLKO wtedy, gdy z transkrypcji lub przesłanych załączników wynika, że pacjent cierpi na opisaną dolegliwość. Jeśli brak dopasowania, pomiń link. Każdy dołączany link wstaw w formacie [Tytuł artykułu](URL) — NIGDY nie wklejaj gołego adresu URL.\n\nTranskrypcja rozmowy:\n{transcript}\n"
                         
                         if teksty_z_docx:
                             prompt_glowny += f"\nDodatkowe dokumenty tekstowe przesłane w załącznikach Word:\n{teksty_z_docx}"
