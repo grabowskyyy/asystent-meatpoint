@@ -77,7 +77,7 @@ TEKST_PICIU_SZABLON = (
     "Z karmy {{BARF/BACF}} {{IMIĘ PACJENTA}} będzie {{dostawał/dostawała}} ok. **X ml** wody dziennie, jak już będzie {{zjadał/zjadała}} całą dzienną porcję.\n\n"
     "Dodatkowo {{powinien/powinna}} wypijać ok. **X ml** na dzień.\n\n"
     "Jak to zrobić, by {{IMIĘ PACJENTA}} {{dopijał/dopijała}} więcej wody?\n"
-    "- Dolewając ok. **X ml** wody dodatkowo do każdego posiłku (jeśli mamy {{LICZBA POSIŁKÓW}} posiłki).\n"
+    "- Dolewając ok. **X ml** wody dodatkowo do każdego posiłku (jeśli posiłków dziennie jest {{LICZBA POSIŁKÓW}}).\n"
     "- Lub zwiększając ilość wody do diety {{BARF/BACF}} (można zastosować więcej wody niż podano w przepisie, wymieszać ją dokładnie z mieszanką i mieszankę wstawić do lodówki na ok. 2 godziny — mięso wchłonie wtedy znaczną część wody i nie będzie „zupki”).\n"
     "- Można dodatkowo rozstawić w domu kubeczki/miseczki/sztuczne kryształy, które będą dla {{IMIĘ PACJENTA}} atrakcyjne (np. będą odbijać światło i {{IMIĘ PACJENTA}} będzie się tą wodą bawić). Jeśli lubi pić z fontanny lub z kapiącego kranu, też można tak zachęcać.\n\n"
     "W okresie tranzycji proszę dolewać tyle wody, ile zwykle {{IMIĘ PACJENTA}} {{akceptował/akceptowała}}. Zależy nam na razie na płynnym zaakceptowaniu zmiany diety — potem będzie można zwiększać jej ilość."
@@ -93,14 +93,14 @@ TEKST_SMACZKI_SZABLON = (
     "Z uwagi na {{nadwagę / wagę graniczną}} ilość kalorii z dziennej porcji {{IMIĘ PACJENTA}} ze smaczków musi wynosić maksymalnie do **X kcal/dzień**. "
     "Wtedy nie trzeba zmniejszać mieszanki, a waga {{IMIĘ PACJENTA}} powinna delikatnie spadać.\n\n"
     "[AKAPIT TYLKO PRZY DIECIE ELIMINACYJNEJ / MONOBIAŁKOWEJ — w przeciwnym razie POMIŃ:] "
-    "Kluczowe jest dostosowanie smaczków do diety eliminacyjnej, czyli do diety {{BARF/BACF}} {{BIAŁKO}} podajemy TYLKO smaczki {{BIAŁKO — przymiotnik, np. wieprzowe}}. "
+    "Kluczowe jest dostosowanie smaczków do diety eliminacyjnej, czyli do diety {{BARF/BACF}} {{BIAŁKO — przymiotnik w dopełniaczu, np. wieprzowej / drobiowej}} podajemy TYLKO smaczki {{BIAŁKO — przymiotnik, np. wieprzowe / drobiowe}}. "
     "Nowe smaczki wprowadzimy razem z nowym białkiem. Nie mieszamy smaków, dopóki nie znajdziemy bezpiecznych białek.\n\n"
     "W smaczkach komercyjnych nie powinna znajdować się:\n"
     "- gliceryna, glikol, syrop glukozowy, cukier, produkty uboczne pochodzenia zwierzęcego i roślinnego, sorbitol (dopuszczalny ewentualnie w pastach do zębów)\n"
     "- smaczki mogą być „dla psów” lub „dla kotów” – to nie ma znaczenia, liczy się czysty i prosty skład\n\n"
     "Przykładowe smaczki komercyjne:\n"
-    "[NAJPIERW smaczki, które Opiekun stosuje obecnie (z materiałów), jeśli pasują do diety — każdy w osobnym punkcie; przy nadwadze dopisz dawkę:]\n"
-    "- {{NAZWA SMACZKA Z MATERIAŁÓW}} – dawka na dzień do **X g** (**X kcal**/100 g produktu)\n"
+    "[NAJPIERW smaczki, które Opiekun stosuje obecnie (z materiałów), jeśli pasują do diety — każdy w osobnym punkcie. Dawkę '– dawka na dzień do **X g** (**X kcal**/100 g produktu)' dopisuj WYŁĄCZNIE przy nadwadze; bez nadwagi sama nazwa:]\n"
+    "- {{NAZWA SMACZKA Z MATERIAŁÓW}}\n"
     "[POTEM 5–7 pozycji DOBRANYCH z poniższej puli: tylko smaczki 100% mięsne / liofilizowane; przy diecie eliminacyjnej WYŁĄCZNIE z białkiem diety (np. BACF wieprzowy -> tylko wieprzowe); nie wypisuj całej puli:]\n"
     "PULA: Kiwi Walker 100% liofilizowane (różne mięsa) | Lio PEPE 100% liofilizowane (np. Pork) | AYLA liofilizowane | Cosma Snackies 100% liofilizowane | "
     "John Dog Freeze Dried | catz finefood Meatz | Syta Micha 100% Liofilizowane Mięso, Syta micha mini płucka, Syta micha Freezy | "
@@ -121,7 +121,7 @@ TEKST_KARMY_KOMERCYJNE_SZABLON = (
 )
 
 TEKST_KALORYCZNOSC_SZABLON = (
-    "diety ustawiona na poziomie ok. **X kcal/dzień** (**X kg** wagi; cel: {{utrzymanie masy ciała / redukcja / przyrost — wg materiałów}}). "
+    "diety ustawiona na poziomie ok. **X kcal/dzień** (**X kg** wagi; cel: {{WYBIERZ JEDNO wg materiałów: utrzymanie masy ciała / redukcja masy ciała / przyrost masy ciała}}). "
     "Kaloryczność jest wartością wyjściową – w przypadku wahań wagi lub uczucia głodu możliwa jest jej jednorazowa korekta w ramach konsultacji (do miesiąca od wizyty)."
 )
 
@@ -420,6 +420,9 @@ def _dodaj_tekst_z_formatowaniem(p, tekst):
 def parsuj_i_formatuj_tekst(p, tekst):
     """Renderuje tekst, wyróżniając kolorem znaczniki [BRAK INFORMACJI] i [DO UZUPEŁNIENIA]."""
     wzor = r'(\[BRAK INFORMACJI\]|\[DO UZUPEŁNIENIA\])'
+    # Znaczniki renderujemy same (kolor + pogrubienie); zdejmij ewentualne '**' wokół nich,
+    # bo rozdzielone przez znacznik gwiazdki przestawiałyby pogrubienie reszty linii.
+    tekst = re.sub(r'\*\*\s*' + wzor + r'\s*\*\*', r'\1', tekst)
     for seg in re.split(wzor, tekst):
         if not seg:
             continue
@@ -429,6 +432,21 @@ def parsuj_i_formatuj_tekst(p, tekst):
             ra.font.color.rgb = ZNACZNIKI_UWAGI[seg]
         else:
             _dodaj_tekst_z_formatowaniem(p, seg)
+
+
+def _rozdziel_etykiete(tekst):
+    """Dzieli 'Etykieta: wartość' na (etykieta_bez_gwiazdek, wartość) albo zwraca None,
+    gdy linia nie wygląda na parę etykieta:wartość. Obsługuje oba zapisy pogrubienia:
+    '**Etykieta**: wartość' i '**Etykieta:** wartość' (w drugim rozcięcie zostawia osieroconą
+    '**' na początku wartości — tu ją usuwamy, inaczej cała reszta linii wychodzi pogrubiona)."""
+    if ':' not in tekst or tekst.strip().startswith('http'):
+        return None
+    pk_s, zk_s = tekst.split(':', 1)
+    if len(pk_s) >= 45:
+        return None
+    if pk_s.count('**') % 2 == 1:          # dwukropek był WEWNĄTRZ pogrubienia
+        zk_s = zk_s.replace('**', '', 1)   # domknij je: usuń pierwszą osieroconą '**'
+    return pk_s.replace('**', '').strip(), zk_s
 
 
 def konwertuj_do_docx(tekst_md):
@@ -477,25 +495,25 @@ def konwertuj_do_docx(tekst_md):
             czysty_h3 = l_s.replace('### ', '').replace('**', '')
             r = p.add_run(czysty_h3); r.bold, r.font.size = True, Pt(10.5)
         elif l_s.startswith('- ') or l_s.startswith('* ') or l_s.startswith('• '):
-            c_t = l_s.lstrip('-*• ').strip()
+            # Zdejmij DOKŁADNIE znacznik listy + spację. (Wcześniejsze lstrip('-*• ') zjadało też
+            # otwierające '**' pogrubienia, co odwracało parzystość pogrubień w całym punkcie.)
+            c_t = l_s[2:].strip()
             p = doc.add_paragraph(style='List Bullet'); p.paragraph_format.space_after = Pt(3)
-            if ':' in c_t and not c_t.strip().startswith('http'):
-                pk_s, zk_s = c_t.split(':', 1)
-                if len(pk_s) < 45: 
-                    pk_czysty = pk_s.replace('**', '').strip()
-                    p.add_run(pk_czysty + ': ').bold = True
-                    parsuj_i_formatuj_tekst(p, zk_s)
-                    continue
+            para = _rozdziel_etykiete(c_t)
+            if para:
+                pk_czysty, zk_s = para
+                p.add_run(pk_czysty + ': ').bold = True
+                parsuj_i_formatuj_tekst(p, zk_s)
+                continue
             parsuj_i_formatuj_tekst(p, c_t)
         else:
-            if ':' in l_s and not l_s.strip().startswith('http'):
-                pk_s, zk_s = l_s.split(':', 1)
-                if len(pk_s) < 45: 
-                    p = doc.add_paragraph()
-                    pk_czysty = pk_s.replace('**', '').strip()
-                    p.add_run(pk_czysty + ': ').bold = True
-                    parsuj_i_formatuj_tekst(p, zk_s)
-                    continue
+            para = _rozdziel_etykiete(l_s)
+            if para:
+                pk_czysty, zk_s = para
+                p = doc.add_paragraph()
+                p.add_run(pk_czysty + ': ').bold = True
+                parsuj_i_formatuj_tekst(p, zk_s)
+                continue
             p = doc.add_paragraph(); parsuj_i_formatuj_tekst(p, l_s)
             
     b = BytesIO(); doc.save(b); return b.getvalue()
@@ -771,9 +789,9 @@ with tab1:
                             elif naglowek == "Plan dietetyczny:":
                                 instrukcja_szablonu += f"## {naglowek}\n- Wypisz w punktach '- ' ustalenia planu z materiałów (rodzaj diety BARF/BACF, mięsa/białko, forma, warianty, zamienniki, dzienniczek itp.) — słowami Ani.\n- JAKO JEDEN Z PUNKTÓW (najlepiej przedostatni) wstaw szkielet kaloryczności Ani — wartości z materiałów zamiast X, jeśli nie padły, zostaw pogrubione X. ZAKAZ zdań typu 'zostanie wyliczona':\n- **Kaloryczność** {TEKST_KALORYCZNOSC_SZABLON}\n- Jeśli Ania podała dodatkowe ustalenia o kaloryczności (np. podział kcal dieta/smaczki) — dopisz je w tym samym punkcie jej słowami.\n"
                             elif naglowek == "Suplementy dodatkowe:":
-                                instrukcja_szablonu += f"## {naglowek}\n- To miejsce WYŁĄCZNIE na suplementy DODATKOWE — ponad standardowy zestaw BARF/BACF. Standardowe (NIE wypisuj ich tutaj): {STANDARDOWE_SUPLEMENTY_BARF}.\n- Wyłap z notatek / INFO draftu Ani i z transkrypcji każdy PLANOWANY suplement spoza tego zestawu (np. koenzym Q10/ubichinol, NAC, astaksantyna, L-glutamina, L-karnityna, cordyceps, probiotyki/prebiotyki, beta-glukany, magnez, miedź, ostropest/karczoch, chitosan, arginina, kwercetyna, glukozamina/chondroityna, omułek, kolagen) i WYMIEŃ je w punktach '- ' — sama nazwa (+ preparat, jeśli padł), po każdej [DO UZUPEŁNIENIA].\n- BEZ dawek i BEZ opisów działania — to Ania uzupełnia ręcznie. Chodzi o to, żeby żadnego nie pominąć.\n- Jeśli w materiałach nie ma planowanych suplementów dodatkowych, wstaw [DO UZUPEŁNIENIA].\n"
+                                instrukcja_szablonu += f"## {naglowek}\n- To miejsce WYŁĄCZNIE na suplementy DODATKOWE — ponad standardowy zestaw BARF/BACF. Standardowe (NIE wypisuj ich tutaj): {STANDARDOWE_SUPLEMENTY_BARF}.\n- Wyłap z notatek / INFO draftu Ani i z transkrypcji każdy PLANOWANY suplement spoza tego zestawu (np. koenzym Q10/ubichinol, NAC, astaksantyna, L-glutamina, L-karnityna, cordyceps, probiotyki/prebiotyki, beta-glukany, magnez, miedź, ostropest/karczoch, chitosan, arginina, kwercetyna, glukozamina/chondroityna, omułek, kolagen) i WYMIEŃ je w punktach '- ' — KRÓTKA nazwa substancji/kategorii (1–3 słowa, np. 'pre/probiotyki', 'NAC', 'pasta odkłaczająca'; + nazwa preparatu, jeśli padła), po każdej [DO UZUPEŁNIENIA].\n- BEZ dawek, BEZ opisów działania i BEZ celu ('na uszczelnienie jelit', 'dobrany do wrażliwego żołądka' — tego NIE pisz) — to Ania uzupełnia ręcznie. Chodzi o to, żeby żadnego nie pominąć.\n- Jeśli w materiałach nie ma planowanych suplementów dodatkowych, wstaw [DO UZUPEŁNIENIA].\n"
                             elif naglowek == "Wprowadzanie suplementów:":
-                                instrukcja_szablonu += f"## {naglowek}\n- Wstaw poniższy stały tekst z trzema dopasowaniami: (1) podmień {{{{IMIĘ PACJENTA}}}} na imię pacjenta; (2) jeśli dieta z planu zawiera warzywa/dynię — w KAŻDYM kroku dopisz punkt '• Warzyw' po punkcie o tłuszczu; (3) w każdym wierszu '• Dodatkowo: ' wpisz nazwy suplementów dodatkowych z sekcji 'Suplementy dodatkowe' (bez dawek), a jeśli ich nie ma — zostaw 'Dodatkowo: ' puste. Resztę tekstu zostaw dokładnie bez zmian:\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
+                                instrukcja_szablonu += f"## {naglowek}\n- Wstaw poniższy stały tekst z trzema dopasowaniami: (1) podmień {{{{IMIĘ PACJENTA}}}} na imię pacjenta; (2) jeśli dieta z planu zawiera warzywa/dynię — w KAŻDYM kroku dopisz punkt '• Warzyw' po punkcie o tłuszczu; (3) w każdym wierszu '• Dodatkowo: ' wpisz KRÓTKIE nazwy suplementów dodatkowych z sekcji 'Suplementy dodatkowe' (np. 'pre/probiotyki', bez dawek i bez opisów), a jeśli ich nie ma — zostaw 'Dodatkowo: ' puste. Resztę tekstu zostaw dokładnie bez zmian:\n{TEKST_WPROWADZANIE_SUPLEMENTOW_STALY}\n\n"
                             elif naglowek == "Komentarz do wywiadu:":
                                 instrukcja_szablonu += f"## {naglowek}\n- Napisz zwięzłą syntezę wywiadu w punktach '- ': (1) najważniejsze problemy i oczekiwania Opiekuna, (2) co Ania chce osiągnąć i dlaczego — WYŁĄCZNIE na podstawie tego, co padło w transkrypcji/notatkach.\n- To jest STRESZCZENIE materiałów, nie nowe porady — nie dodawaj zaleceń, których Ania nie wypowiedziała.\n- NIE zostawiaj tej sekcji pustej, jeśli wywiad zawiera jakiekolwiek problemy/cele. [DO UZUPEŁNIENIA] wstaw tylko w miejscu celów Ani, jeśli w materiałach ich nie wyraziła.\n"
                             elif naglowek == "Aktualne badania:":
